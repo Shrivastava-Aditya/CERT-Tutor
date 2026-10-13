@@ -1,0 +1,44 @@
+id: threat-detection
+domain: secure
+title: GuardDuty, Inspector, Macie and friends
+summary: Managed security services that each answer a different question. Match the question to the service.
+icon: aws:guardduty
+
+teach: |
+  | Service | Answers the question | Looks at |
+  |---|---|---|
+  | **GuardDuty** | "Is something attacking or already compromised?" | CloudTrail, VPC Flow Logs, DNS logs (plus S3, EKS and more) |
+  | **Inspector** | "What software vulnerabilities do I have?" | EC2 instances, container images in ECR, Lambda functions |
+  | **Macie** | "Where is sensitive data such as PII stored?" | Objects in S3 |
+  | **Detective** | "What happened in this incident, and how far did it spread?" | Graphs built from logs and findings |
+  | **Security Hub** | "What's my overall security posture?" | Findings from all of the above, plus best-practice checks |
+  | **Trusted Advisor** | "Am I following AWS best practices?" | Cost, security, fault tolerance, limits |
+
+  - All of these **detect and report**. To block something you still need WAF, security groups, SCPs and so on.
+
+under_the_hood: |
+  GuardDuty reads logs that AWS already collects (you don't have to turn on Flow Logs yourself for it) and compares activity
+  with threat intelligence lists and machine-learning baselines. That's how it spots an instance talking to a known
+  crypto-mining domain, or API calls from an unusual country.
+
+  Macie samples and scans S3 objects with pattern matching and machine learning to recognise names, card numbers and passport numbers.
+
+observe:
+  - text: "List GuardDuty findings, highest severity first:"
+    cmd: "aws guardduty list-findings --detector-id abcd1234 --finding-criteria '{\"Criterion\":{\"severity\":{\"Gte\":7}}}'"
+  - text: "Think of your homelab monitor project: GuardDuty is a monitor for suspicious behaviour, not for CPU and disk."
+
+case_study: |
+  A healthcare company turns on GuardDuty in every account through Organizations, Macie on its data buckets and Inspector on its
+  EC2 fleet. Security Hub collects all the findings in one place. In the first week, Macie finds patient records in a forgotten
+  test bucket, and Inspector flags an unpatched OpenSSL on 40 instances.
+
+other_clouds:
+  azure: "Microsoft Defender for Cloud (threats and vulnerabilities), Microsoft Purview (sensitive data), Microsoft Sentinel (SIEM)"
+  gcp: "Security Command Center (threat detection, vulnerabilities), Sensitive Data Protection (PII discovery)"
+
+links:
+  - { title: "What is Amazon GuardDuty?", url: "https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html" }
+  - { title: "What is Amazon Macie?", url: "https://docs.aws.amazon.com/macie/latest/user/what-is-macie.html" }
+
+related: [audit-logging, edge-protection]

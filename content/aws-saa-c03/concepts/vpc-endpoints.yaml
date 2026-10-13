@@ -1,0 +1,40 @@
+id: vpc-endpoints
+domain: secure
+title: VPC endpoints and PrivateLink
+summary: Reach AWS services and partner services privately, without the internet or a NAT gateway.
+icon: aws:privatelink
+
+teach: |
+  - **Gateway endpoint:** for **S3 and DynamoDB only**. It's a route-table entry, and it's **free**. Traffic to the service skips the NAT gateway and internet gateway.
+  - **Interface endpoint (PrivateLink):** an elastic network interface with a private IP in your subnet, for most other AWS services (SQS, KMS, Secrets Manager, Systems Manager and more). Charged per hour and per GB.
+  - **Endpoint services:** a provider puts an app behind a Network Load Balancer and shares it through PrivateLink. Consumers connect from their own VPC, even if **CIDR ranges overlap**.
+  - **Endpoint policies** limit what can be done through the endpoint, for example "only this bucket".
+
+under_the_hood: |
+  A gateway endpoint adds AWS's public IP ranges for S3 or DynamoDB to your route table, pointing at the endpoint, so
+  packets never leave the AWS network. An interface endpoint uses private DNS, so `sqs.us-east-1.amazonaws.com` resolves
+  to the endpoint's private IP inside your VPC.
+
+  PrivateLink only exposes one service through an interface, not the whole network. That's why overlapping CIDRs don't
+  matter, while VPC peering and Transit Gateway can't route between overlapping ranges.
+
+observe:
+  - text: "Check which route tables send S3 traffic through a gateway endpoint:"
+    cmd: "aws ec2 describe-vpc-endpoints --filters Name=service-name,Values=com.amazonaws.us-east-1.s3"
+  - text: "From inside a VPC with an interface endpoint, the service name resolves to a private 10.x address:"
+    cmd: "dig +short sqs.us-east-1.amazonaws.com"
+
+case_study: |
+  A video company's private instances download terabytes from S3 every day through a NAT gateway, and the per-GB processing
+  charge is one of its biggest bills. Adding a free S3 gateway endpoint to the private route tables removes that charge
+  overnight, and the traffic no longer touches the internet.
+
+other_clouds:
+  azure: "Private Endpoints and Private Link service; service endpoints for some services"
+  gcp: "Private Google Access and Private Service Connect"
+
+links:
+  - { title: Gateway endpoints, url: "https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html" }
+  - { title: "What is AWS PrivateLink?", url: "https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html" }
+
+related: [vpc-security-layers, hybrid-connectivity]

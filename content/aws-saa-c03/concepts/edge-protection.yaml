@@ -1,0 +1,40 @@
+id: edge-protection
+domain: secure
+title: AWS WAF and AWS Shield
+summary: WAF blocks bad web requests like SQL injection. Shield absorbs DDoS attacks.
+icon: aws:waf
+
+teach: |
+  - **AWS WAF** is a layer 7 (HTTP) firewall on **CloudFront, ALB, API Gateway, AppSync and Cognito**.
+    - **Managed rule groups** block common attacks (SQL injection, cross-site scripting, known bad IPs, bots) without you writing rules.
+    - **Rate-based rules** throttle an IP that sends too many requests.
+    - Geo match, IP sets and custom rules on headers, paths and body.
+  - **AWS Shield Standard:** free and automatic. Protects against common network and transport layer DDoS (SYN floods, UDP reflection).
+  - **AWS Shield Advanced:** paid. Adds 24/7 response team access, cost protection for scaling during an attack, and advanced detection.
+  - Security groups and network ACLs can't inspect HTTP content, so **request attacks → WAF**.
+
+under_the_hood: |
+  WAF evaluates each request against your web ACL's rules in priority order and allows, blocks, counts or challenges it
+  (with a CAPTCHA). It runs at CloudFront edge locations or in front of your Regional load balancer, so blocked requests never reach your servers.
+
+  Shield works at the network edge, where AWS's capacity absorbs volumetric floods that would overwhelm any single server.
+
+observe:
+  - text: "Your homelab's `ufw` filters by port and IP (layers 3–4). WAF reads the HTTP request itself, like an nginx rule that rejects URLs containing `' OR 1=1`."
+  - text: "See which managed rule groups are available:"
+    cmd: "aws wafv2 list-available-managed-rule-groups --scope REGIONAL"
+
+case_study: |
+  An online store's logs show SQL injection attempts in search queries and a scraper hammering product pages. They attach a WAF
+  web ACL to the ALB with the AWS managed SQL injection and core rule sets, plus a rate-based rule of 2,000 requests per 5 minutes
+  per IP. The attacks get 403 responses at the load balancer, and the scraper is throttled.
+
+other_clouds:
+  azure: "Azure Web Application Firewall (on Front Door or Application Gateway) and Azure DDoS Protection"
+  gcp: "Cloud Armor (WAF rules and DDoS protection)"
+
+links:
+  - { title: AWS WAF, url: "https://docs.aws.amazon.com/waf/latest/developerguide/waf-chapter.html" }
+  - { title: AWS Shield, url: "https://docs.aws.amazon.com/waf/latest/developerguide/shield-chapter.html" }
+
+related: [vpc-security-layers, cloudfront, threat-detection]

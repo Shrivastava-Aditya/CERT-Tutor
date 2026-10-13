@@ -1,0 +1,39 @@
+id: cross-account-access
+domain: secure
+title: Cross-account access with IAM roles
+summary: Let a principal in one account work in another by assuming a role there, with no shared keys.
+icon: aws:iam
+
+teach: |
+  Companies run many AWS accounts. When something in Account B needs resources in Account A:
+
+  - **Cross-account role (most common):** create a role in Account A with the permissions needed, and a **trust policy** naming Account B's role. Code in B calls `sts:AssumeRole` and gets temporary credentials for A.
+  - **Resource-based policy:** some services (S3, SQS, SNS, KMS, Lambda) let you name the other account directly in a bucket or queue policy.
+  - **External ID:** when a *third party* assumes your role, require an external ID in the trust policy so nobody can trick them into using it for someone else.
+  - **Never** share root credentials or IAM user keys between accounts.
+
+under_the_hood: |
+  `AssumeRole` is an AWS STS call. STS checks the role's trust policy (*who may assume*) and the caller's own permissions
+  (*may this caller call AssumeRole on that ARN*). Both must allow it. The credentials it returns expire, by default after one hour.
+
+  The difference that matters: with a role, the caller *swaps* identities and loses its own permissions for that session.
+  With a resource policy, the caller keeps its identity and can use resources in both accounts at once.
+
+observe:
+  - text: "Assume a role in another account and see the temporary credentials:"
+    cmd: "aws sts assume-role --role-arn arn:aws:iam::111122223333:role/ReadReports --role-session-name test"
+  - text: "It's like `sudo -u otheruser` on your homelab: you act as someone else for a while, and the system checks you're allowed to."
+
+case_study: |
+  A data team's Lambda functions in an analytics account read raw files from the production account's S3 bucket.
+  Production creates a `ReadRawData` role that only allows reading that one bucket, and trusts the analytics Lambda role.
+  No keys exist anywhere, and production can cut off access by editing a single trust policy.
+
+other_clouds:
+  azure: "Cross-tenant access with Azure Lighthouse or multi-tenant app registrations"
+  gcp: "Grant another project's service account a role on your resource, or use service account impersonation"
+
+links:
+  - { title: Cross-account access with roles, url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html" }
+
+related: [iam-fundamentals, organizations-scp]

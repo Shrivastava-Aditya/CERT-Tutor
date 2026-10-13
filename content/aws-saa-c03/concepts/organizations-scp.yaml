@@ -1,0 +1,40 @@
+id: organizations-scp
+domain: secure
+title: AWS Organizations and SCPs
+summary: Manage many accounts together, and set guardrails that even account administrators can't break.
+icon: aws:organizations
+
+teach: |
+  AWS Organizations groups your accounts under one management account, with consolidated billing.
+
+  - **Organizational units (OUs)** group accounts, for example *Prod*, *Dev* and *Security*.
+  - **Service control policies (SCPs)** set the **maximum permissions** for every principal in the accounts they're attached to, **including the account's root user and admins**. They grant nothing by themselves.
+  - Typical SCP guardrails: deny turning off CloudTrail, deny leaving the organization, only allow approved Regions.
+  - **AWS Control Tower** sets up a multi-account "landing zone" for you: a log archive account, an audit account and preventive and detective guardrails.
+  - SCPs **don't apply to the management account**, which is one reason to keep workloads out of it.
+
+under_the_hood: |
+  When an account makes a request, AWS checks the SCPs on every level above it: the root, each OU, then the account.
+  An action must be allowed all the way down. Anything denied anywhere is denied.
+
+  That's why an SCP beats an IAM policy for guardrails: an account admin can edit or detach IAM policies in their own
+  account, but SCPs live in the management account where they can't reach.
+
+observe:
+  - text: "List the SCPs attached to an OU:"
+    cmd: "aws organizations list-policies-for-target --target-id ou-ab12-cdef3456 --filter SERVICE_CONTROL_POLICY"
+  - text: "Like the root user on your homelab versus everyone else: SCPs are rules that even each account's own 'root' has to live under."
+
+case_study: |
+  A bank with 60 accounts found a developer had switched off CloudTrail in a dev account to reduce noise. They attached an SCP
+  to every OU denying `cloudtrail:StopLogging` and `cloudtrail:DeleteTrail`, and another limiting usage to two EU Regions.
+  Account admins can still do their jobs, but they can't remove the audit trail or deploy outside the EU.
+
+other_clouds:
+  azure: "Management groups with Azure Policy"
+  gcp: "Resource hierarchy (organization, folders, projects) with Organization Policy constraints"
+
+links:
+  - { title: Service control policies, url: "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html" }
+
+related: [iam-fundamentals, audit-logging, cross-account-access]

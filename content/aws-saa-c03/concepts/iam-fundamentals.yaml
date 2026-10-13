@@ -1,0 +1,44 @@
+id: iam-fundamentals
+domain: secure
+title: AWS IAM roles and policies
+summary: Who can do what in AWS. Roles hand out temporary credentials, so apps never need stored keys.
+icon: aws:iam
+
+teach: |
+  IAM controls every API call in AWS: **who** (a principal) can do **what** (actions) on **which resources**.
+
+  - **Users** are long-term identities with passwords or access keys. Keep them for humans, ideally through IAM Identity Center.
+  - **Roles** have no permanent credentials. Anyone allowed by the role's *trust policy* can assume it and gets **temporary credentials** that expire.
+  - **Instance profiles** attach a role to an EC2 instance. The SDK picks up the credentials automatically, so there are no keys in code, env vars or AMIs.
+  - **Policies** are JSON documents that allow or deny actions. An explicit **Deny always wins**, and anything not allowed is denied by default.
+  - **Permissions boundaries** set the *maximum* permissions a user or role can ever have. Use them to let developers create roles without escalating their own privileges.
+  - **Least privilege:** grant only what's needed, then tighten it with IAM Access Analyzer.
+
+under_the_hood: |
+  When an instance has a role, the EC2 instance metadata service (`169.254.169.254`, IMDSv2) hands the SDK short-lived
+  credentials and rotates them before they expire. Nothing is written to disk, which is why roles beat stored keys.
+
+  Every request is evaluated against all policies that apply: identity policies, resource policies, permissions boundaries,
+  SCPs and session policies. The effective permission is what *all* of them allow, minus anything any of them deny.
+
+observe:
+  - text: "On your homelab, `id` shows your user and groups, and file permissions decide what you can touch. IAM is the same idea for every AWS API call."
+  - text: "From an EC2 instance with a role, see which identity the SDK is using:"
+    cmd: "aws sts get-caller-identity"
+  - text: "Test whether a policy allows an action before you rely on it:"
+    cmd: "aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::123456789012:role/app --action-names dynamodb:PutItem"
+
+case_study: |
+  A startup's developers kept access keys in `.env` files on EC2, and one leaked through a public Git repo.
+  They switched every app to instance profiles and deleted the keys. Developers can now create roles for their own Lambda
+  functions, but only with the team's permissions boundary attached, so nobody can grant themselves admin.
+
+other_clouds:
+  azure: "Microsoft Entra ID with Azure RBAC role assignments, and managed identities in place of instance profiles"
+  gcp: "Cloud IAM roles bound to principals, with service accounts attached to VMs"
+
+links:
+  - { title: IAM roles, url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html" }
+  - { title: Permissions boundaries, url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html" }
+
+related: [cross-account-access, organizations-scp, secrets-management]

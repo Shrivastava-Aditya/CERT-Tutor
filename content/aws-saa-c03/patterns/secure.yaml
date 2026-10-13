@@ -1,0 +1,172 @@
+# Patterns for the Secure domain (30%)
+
+- id: s3-private-from-vpc
+  concept: vpc-endpoints
+  clues: [private subnet, Amazon S3, must not travel over the public internet]
+  rule: "Private instances → S3 or DynamoDB without the internet or NAT costs → gateway VPC endpoint"
+  traps:
+    - { id: nat-gateway-for-private-s3, option: NAT gateway, why: "Sends traffic to S3's public endpoint and charges per GB processed." }
+    - { id: public-ip-for-s3, option: Internet gateway + public IPs, why: "Puts the instances on the internet, the opposite of what's asked." }
+    - { id: vpn-for-s3, option: Site-to-Site VPN, why: "Connects on-premises networks to a VPC. It does nothing for VPC-to-S3 traffic." }
+
+- id: privatelink-overlapping-cidr
+  concept: vpc-endpoints
+  clues: [SaaS provider, private, overlaps]
+  rule: "Private access to one service in another VPC, CIDRs overlap → PrivateLink (interface endpoint to an endpoint service)"
+  traps:
+    - { id: peering-with-overlap, option: VPC peering, why: "Peering doesn't allow overlapping CIDR ranges." }
+    - { id: tgw-with-overlap, option: Transit Gateway, why: "Routes whole networks, and can't route between overlapping ranges without extra NAT work." }
+    - { id: public-nlb-for-private, option: Public NLB + IP allowlist, why: "Traffic crosses the internet, so it isn't private." }
+
+- id: instance-role-not-keys
+  concept: iam-fundamentals
+  clues: [EC2, long-term credentials]
+  rule: "An app on EC2 needs AWS access → IAM role via an instance profile (temporary credentials, nothing stored)"
+  traps:
+    - { id: access-keys-in-env, option: IAM user keys in environment variables, why: "Long-term keys on the instance can leak and must be rotated by hand." }
+    - { id: access-keys-in-ami, option: IAM user keys baked into the AMI, why: "Every instance and every copy of the AMI carries the same long-term keys." }
+    - { id: user-keys-in-secrets-manager, option: IAM user keys stored in Secrets Manager, why: "Better hidden, but they're still long-term user keys. A role removes the keys entirely." }
+
+- id: permissions-boundary-delegation
+  concept: iam-fundamentals
+  clues: [create IAM roles, more permissions]
+  rule: "Let people create roles without escalating privilege → require a permissions boundary on every role they create"
+  traps:
+    - { id: scp-blocks-all-role-creation, option: SCP denying iam:CreateRole, why: "Stops developers creating roles at all, which isn't what's asked." }
+    - { id: review-roles-later, option: Weekly review with Access Analyzer, why: "Catches escalation after it happens instead of preventing it." }
+    - { id: part-time-admin, option: Admin access during business hours, why: "Admin access is still admin access, whatever the hours." }
+
+- id: secrets-auto-rotation
+  concept: secrets-management
+  clues: [rotated, automatically, password]
+  rule: "Database passwords that must rotate automatically → Secrets Manager with rotation"
+  traps:
+    - { id: parameter-store-rotation, option: Parameter Store SecureString, why: "Encrypts values but has no built-in rotation." }
+    - { id: kms-rotation-for-passwords, option: KMS automatic key rotation, why: "Rotates encryption key material, not database passwords." }
+    - { id: env-var-secrets, option: Encrypted Lambda environment variables, why: "Every password change needs a redeploy, and nothing rotates it." }
+
+- id: cloudfront-only-s3
+  concept: s3-access-control
+  clues: [CloudFront, bypassing, only be accessed through CloudFront]
+  rule: "Users must reach S3 only through CloudFront → origin access control (OAC) + bucket policy for that distribution"
+  traps:
+    - { id: referer-header-check, option: Referer header condition, why: "Referer headers are trivial to fake." }
+    - { id: transfer-acceleration-as-access, option: S3 Transfer Acceleration, why: "Speeds up transfers. It doesn't control who can read." }
+    - { id: signed-urls-with-public-bucket, option: Signed URLs + public bucket, why: "Signed URLs control CloudFront access, but a public bucket can still be read directly." }
+
+- id: scp-guardrail
+  concept: organizations-scp
+  clues: [AWS Organizations, including account administrators, prevent]
+  rule: "Stop everyone in member accounts, admins included → SCP on the OU"
+  traps:
+    - { id: iam-policy-per-account, option: IAM deny policy in each account, why: "An account admin can edit or detach it." }
+    - { id: config-rule-detect-only, option: AWS Config rule, why: "Detects the change after it happens; it doesn't prevent it." }
+    - { id: boundary-admin-can-remove, option: Permissions boundaries on every role, why: "Account admins can remove or change boundaries." }
+
+- id: waf-for-request-attacks
+  concept: edge-protection
+  clues: [SQL injection, cross-site scripting]
+  rule: "Malicious HTTP requests (SQL injection, XSS, bad bots) → AWS WAF with managed rules"
+  traps:
+    - { id: shield-for-sqli, option: AWS Shield Standard, why: "Shield absorbs network DDoS. It doesn't read request content." }
+    - { id: security-group-deny, option: Security group deny rules, why: "Security groups have no deny rules and can't inspect HTTP." }
+    - { id: guardduty-blocks-requests, option: Amazon GuardDuty, why: "Detects threats from logs. It doesn't block requests." }
+
+- id: ebs-encryption-by-default
+  concept: kms-encryption
+  clues: [every new Amazon EBS volume, encrypted]
+  rule: "All new EBS volumes in a Region must be encrypted → turn on EBS encryption by default"
+  traps:
+    - { id: config-rule-reports-only, option: Config rule for unencrypted volumes, why: "Reports unencrypted volumes after they exist. It isn't enforcement." }
+    - { id: s3-encryption-for-ebs, option: S3 default encryption, why: "S3 settings don't affect EBS." }
+    - { id: manual-template-review, option: Ask teams + weekly review, why: "Relies on people remembering. Not enforcement." }
+
+- id: customer-managed-key-control
+  concept: kms-encryption
+  clues: [control the encryption key policy, disable the key, CloudTrail]
+  rule: "Must control the key policy, disable the key, and audit every use → SSE-KMS with a customer managed key"
+  traps:
+    - { id: sse-s3-no-control, option: SSE-S3, why: "You never see or control S3-managed keys." }
+    - { id: aws-managed-key-fixed, option: AWS managed key (aws/s3), why: "Shows in CloudTrail, but you can't change its policy or disable it." }
+    - { id: client-side-big-change, option: Client-side encryption, why: "Requires application changes and handling key storage yourself." }
+
+- id: encrypt-existing-rds
+  concept: kms-encryption
+  clues: [unencrypted, Amazon RDS, encryption at rest]
+  rule: "Encrypt an existing unencrypted RDS database → snapshot → copy with encryption → restore"
+  traps:
+    - { id: modify-rds-to-encrypt, option: Modify the instance to turn on encryption, why: "Encryption can't be switched on for an existing unencrypted instance." }
+    - { id: encrypted-replica-from-plain, option: Encrypted read replica, why: "An unencrypted instance can't have an encrypted read replica." }
+    - { id: ebs-default-for-rds, option: EBS encryption by default, why: "RDS storage is managed by AWS. The EBS setting doesn't apply." }
+
+- id: shell-without-ports
+  concept: session-manager
+  clues: [no inbound ports, no bastion hosts, every session is logged]
+  rule: "Shell access with no open ports or bastions, fully logged → Session Manager + SSM instance profile"
+  traps:
+    - { id: bastion-with-ssh, option: Bastion host with port 22, why: "Uses a bastion and an open port, both forbidden." }
+    - { id: shared-ssh-keys, option: Key pair shared through S3, why: "Shared long-term keys, still needing port 22, and nothing logged." }
+    - { id: public-ip-ssh, option: Elastic IPs + port 22, why: "Opens inbound SSH to the internet." }
+
+- id: guardduty-for-threats
+  concept: threat-detection
+  clues: [VPC Flow Logs, DNS query logs, cryptocurrency-mining]
+  rule: "Detect attacks and compromise from logs → GuardDuty"
+  traps:
+    - { id: inspector-for-threats, option: Amazon Inspector, why: "Scans for software vulnerabilities, not active threats." }
+    - { id: macie-for-threats, option: Amazon Macie, why: "Finds sensitive data in S3." }
+    - { id: trusted-advisor-for-threats, option: AWS Trusted Advisor, why: "Checks best practices. It isn't threat detection." }
+
+- id: macie-for-pii
+  concept: threat-detection
+  clues: [S3 buckets, personally identifiable information]
+  rule: "Find PII or sensitive data in S3 → Macie"
+  traps:
+    - { id: guardduty-for-pii, option: Amazon GuardDuty, why: "Looks for threats, not data content." }
+    - { id: config-for-pii, option: AWS Config, why: "Tracks resource configuration, not what's inside objects." }
+    - { id: detective-for-pii, option: Amazon Detective, why: "Investigates security findings after they happen." }
+
+- id: app-users-need-aws
+  concept: cognito
+  clues: [sign up, sign in, temporary]
+  rule: "App users need sign-in plus scoped AWS access → Cognito user pool + identity pool"
+  traps:
+    - { id: iam-user-per-app-user, option: An IAM user per app user, why: "Doesn't scale and hands out long-term keys." }
+    - { id: keys-in-mobile-app, option: Keys embedded in the app, why: "Anyone can extract keys from an app package." }
+    - { id: public-writable-bucket, option: Publicly writable bucket, why: "Anyone on the internet can abuse it." }
+
+- id: block-ip-range
+  concept: vpc-security-layers
+  clues: [specific IP range, block all traffic]
+  rule: "Block a specific IP range → network ACL deny rule (security groups can't deny)"
+  traps:
+    - { id: security-group-deny-range, option: Security group deny rule, why: "Security groups only have allow rules." }
+    - { id: remove-internet-route, option: Remove the internet gateway route, why: "Cuts off every user, not just the attackers." }
+    - { id: shield-blocks-range, option: AWS Shield Standard, why: "Protects against DDoS generally; you can't use it to block a chosen range." }
+
+- id: cross-account-role
+  concept: cross-account-access
+  clues: [Account B, Account A, long-term credentials]
+  rule: "Code in one account needs resources in another → role in the resource account, trusted by the caller, assumed through STS"
+  traps:
+    - { id: iam-user-keys-cross-account, option: IAM user keys from the other account, why: "Long-term keys stored in code or config." }
+    - { id: share-root-credentials, option: Share root credentials, why: "Never share root, under any circumstances." }
+    - { id: public-bucket-secret-prefix, option: Public bucket with an obscure prefix, why: "Security through obscurity. Anyone who finds the path can read it." }
+
+- id: https-free-auto-renew
+  concept: acm-tls
+  clues: [HTTPS, free certificate, renews automatically]
+  rule: "Free auto-renewing TLS on ALB, CloudFront or API Gateway → ACM certificate"
+  traps:
+    - { id: self-signed-cert, option: Self-signed certificates on instances, why: "Browsers don't trust them, and they don't cover traffic to the load balancer." }
+    - { id: cloudhsm-public-cert, option: AWS CloudHSM, why: "Stores keys. It doesn't issue public certificates." }
+    - { id: kms-for-tls, option: AWS KMS key on the listener, why: "KMS keys don't provide TLS certificates." }
+
+- id: org-wide-audit-trail
+  concept: audit-logging
+  clues: [all API activity, every account, have not been changed]
+  rule: "All API calls, all accounts, tamper-evident → organization trail + log file integrity validation"
+  traps:
+    - { id: per-account-trails-copied, option: Separate trails + copy job, why: "More work, and new accounts can be missed." }
+    - { id: config-for-api-calls, option: AWS Config aggregator, why: "Records resource configuration, not every API call." }
+    - { id: flow-logs-for-api-calls, option: VPC Flow Logs, why: "Records network traffic, not API activity." }

@@ -1,0 +1,42 @@
+id: kms-encryption
+domain: secure
+title: Encryption with AWS KMS
+summary: Managed encryption keys for S3, EBS, RDS and more, with key policies and an audit trail.
+icon: aws:kms
+
+teach: |
+  - **AWS managed keys** (`aws/s3`, `aws/ebs`): created for you, free to store, but you **can't change their policy or disable them**.
+  - **Customer managed keys:** you control the **key policy**, rotation, and can **disable or schedule deletion**. Every use is logged in **CloudTrail**.
+  - **S3 options:** SSE-S3 (S3 owns the keys, the default), SSE-KMS (a KMS key, auditable), SSE-C (you send the key with each request), or client-side encryption.
+  - **EBS:** turn on **encryption by default** per Region, and every new volume is encrypted.
+  - **RDS:** encryption is chosen at creation. To encrypt an existing database: **snapshot → copy the snapshot with encryption → restore**.
+  - Keys are **Regional**. Multi-Region keys exist for cross-Region use.
+
+under_the_hood: |
+  KMS uses *envelope encryption*. A service asks KMS for a data key, encrypts your data with it locally, and stores the
+  data key encrypted under your KMS key next to the data. Decrypting means asking KMS to unwrap that data key, which is
+  the moment your key policy and CloudTrail come into play.
+
+  The key material never leaves KMS's hardware security modules unencrypted. That's why disabling a KMS key makes the
+  data unreadable straight away, even though the data itself is untouched.
+
+observe:
+  - text: "Check whether EBS encryption by default is on in this Region:"
+    cmd: "aws ec2 get-ebs-encryption-by-default"
+  - text: "See recent uses of a key in CloudTrail:"
+    cmd: "aws cloudtrail lookup-events --lookup-attributes AttributeKey=ResourceName,AttributeValue=arn:aws:kms:us-east-1:123456789012:key/abcd-1234"
+
+case_study: |
+  Auditors at a payments company require that the company control its own encryption keys and can revoke access in an incident.
+  The team moves sensitive S3 buckets to SSE-KMS with a customer managed key, limits the key policy to two app roles, and sets
+  a CloudWatch alarm on unusual `Decrypt` calls. Disabling the key becomes their documented emergency stop.
+
+other_clouds:
+  azure: "Azure Key Vault (customer-managed keys for Storage, Disks, SQL)"
+  gcp: "Cloud KMS (customer-managed encryption keys, CMEK)"
+
+links:
+  - { title: AWS KMS keys, url: "https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html" }
+  - { title: Encrypting RDS resources, url: "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html" }
+
+related: [secrets-management, s3-access-control, ebs-volume-types]

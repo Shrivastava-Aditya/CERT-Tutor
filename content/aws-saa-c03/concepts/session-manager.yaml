@@ -1,0 +1,38 @@
+id: session-manager
+domain: secure
+title: Systems Manager Session Manager
+summary: Shell access to instances with no open ports, no bastion hosts, no SSH keys, and every session logged.
+icon: aws:systems-manager
+
+teach: |
+  - The **SSM Agent** on the instance opens an **outbound** connection to Systems Manager. You start a shell from the console or CLI.
+  - **No inbound port 22**, **no bastion host**, **no SSH keys** to share or rotate.
+  - Access is controlled by **IAM** (who can start sessions on which instances), and sessions can be **logged to S3 or CloudWatch Logs**.
+  - The instance needs:
+    - an IAM role with **AmazonSSMManagedInstanceCore**;
+    - a route to Systems Manager, either a **NAT gateway** or **VPC interface endpoints** (`ssm`, `ssmmessages`, `ec2messages`).
+  - It also does port forwarding, for example to reach a private database from your laptop.
+
+under_the_hood: |
+  Because the agent dials out over HTTPS, the instance's security group needs no inbound rules at all. Your session travels
+  through the Systems Manager service, which is where IAM checks it and logging happens. It's the same pattern as a reverse
+  tunnel, run as a managed service.
+
+observe:
+  - text: "Start a shell on a private instance:"
+    cmd: "aws ssm start-session --target i-0123456789abcdef0"
+  - text: "On your homelab you SSH in directly on port 22. Session Manager is how you'd do it with port 22 closed, with every keystroke audited."
+
+case_study: |
+  After a pen test flagged its internet-facing bastion host, a company moved every admin to Session Manager. They removed port 22
+  from all security groups, deleted the shared key pairs, and send session logs to S3. Admin access is now granted and revoked
+  through IAM groups.
+
+other_clouds:
+  azure: "Azure Bastion (browser-based RDP and SSH without public IPs)"
+  gcp: "Identity-Aware Proxy (IAP) TCP forwarding and OS Login"
+
+links:
+  - { title: AWS Systems Manager Session Manager, url: "https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html" }
+
+related: [iam-fundamentals, vpc-endpoints, vpc-security-layers]

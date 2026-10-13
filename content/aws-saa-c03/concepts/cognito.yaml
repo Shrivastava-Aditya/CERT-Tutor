@@ -1,0 +1,38 @@
+id: cognito
+domain: secure
+title: Amazon Cognito
+summary: Sign-up and sign-in for your app's users, and temporary AWS credentials for them.
+icon: aws:cognito
+
+teach: |
+  - **User pools** are a user directory: sign-up, sign-in, MFA, password reset, and social or SAML/OIDC logins. They issue **JWT tokens**.
+    - API Gateway and ALB can check those tokens directly.
+  - **Identity pools** swap a token (from a user pool, Google, Apple and so on) for **temporary AWS credentials** from an IAM role.
+    - This lets a mobile app upload straight to S3 or write to DynamoDB **without your own servers and without stored keys**.
+    - Policy variables such as `${cognito-identity.amazonaws.com:sub}` limit each user to **their own prefix**.
+  - Exam rule: **app users (not employees) need AWS access** → Cognito. Never one IAM user per app user.
+
+under_the_hood: |
+  The flow is: the user signs in to the user pool and gets an ID token, the app sends it to the identity pool, the identity pool
+  calls STS `AssumeRoleWithWebIdentity`, and the app gets short-lived credentials. Those credentials can only do what the role's
+  policy allows, scoped by the user's identity ID.
+
+observe:
+  - text: "See a user pool's app clients:"
+    cmd: "aws cognito-idp list-user-pool-clients --user-pool-id us-east-1_AbC123"
+  - text: "Decode a Cognito ID token (it's a JWT) to see the claims inside:"
+    cmd: "cut -d. -f2 <<< \"$ID_TOKEN\" | base64 -d 2>/dev/null | jq ."
+
+case_study: |
+  A photo-sharing app first proxied every upload through EC2, which got slow and expensive. They added a Cognito user pool for
+  sign-in and an identity pool whose role allows `s3:PutObject` only on `uploads/${sub}/*`. The app now uploads straight to S3,
+  the servers are gone, and each user can only write to their own folder.
+
+other_clouds:
+  azure: "Microsoft Entra External ID (customer identity), with managed identities or SAS tokens for storage access"
+  gcp: "Identity Platform / Firebase Authentication, with Workload Identity Federation for cloud access"
+
+links:
+  - { title: "What is Amazon Cognito?", url: "https://docs.aws.amazon.com/cognito/latest/developerguide/what-is-amazon-cognito.html" }
+
+related: [iam-fundamentals, s3-access-control]

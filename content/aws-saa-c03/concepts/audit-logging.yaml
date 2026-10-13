@@ -1,0 +1,44 @@
+id: audit-logging
+domain: secure
+title: CloudTrail and AWS Config
+summary: CloudTrail records who did what. Config records what your resources looked like, and checks them against rules.
+icon: aws:cloudtrail
+
+teach: |
+  - **CloudTrail** records **API calls**: who, what, when, from where.
+    - *Event history* keeps 90 days of management events for free.
+    - A **trail** delivers logs to S3 (and optionally CloudWatch Logs) to keep them long term.
+    - An **organization trail**, created in the management account, covers **every account and Region**, including accounts added later.
+    - **Log file integrity validation** writes signed digest files, so you can prove logs weren't changed.
+    - *Data events* (S3 object reads and writes, Lambda invokes) cost extra and are off by default.
+  - **AWS Config** records **resource configuration over time** ("what did this security group look like last Tuesday?").
+    - **Config rules** flag non-compliant resources, for example unencrypted volumes. They **detect**; they don't prevent.
+    - Aggregators show compliance across accounts.
+
+under_the_hood: |
+  CloudTrail writes gzipped JSON files to S3 roughly every 5 minutes. Validation adds an hourly digest file containing
+  SHA-256 hashes of each log, signed with a key AWS holds. Changing or deleting a log breaks the chain, and
+  `aws cloudtrail validate-logs` reports it.
+
+  Best practice is to send logs to a bucket in a separate **log archive account** that workload admins can't touch.
+
+observe:
+  - text: "Who changed this security group?"
+    cmd: "aws cloudtrail lookup-events --lookup-attributes AttributeKey=ResourceName,AttributeValue=sg-0123abcd"
+  - text: "Your homelab's `journalctl` and `/var/log/auth.log` are the same idea for one machine: CloudTrail is the auth log for your whole AWS estate."
+    cmd: "sudo journalctl -u ssh --since today"
+
+case_study: |
+  An insurer with 40 accounts needs one tamper-evident audit log for regulators. They create an organization trail with
+  log file validation, send it to a log archive account whose bucket has Object Lock, and add Config rules for encryption and
+  public access. Audits now take a query instead of a month of spreadsheets.
+
+other_clouds:
+  azure: "Azure Activity Log and Microsoft Entra audit logs; Azure Policy for configuration compliance"
+  gcp: "Cloud Audit Logs; Cloud Asset Inventory and Organization Policy for configuration"
+
+links:
+  - { title: Creating a trail for an organization, url: "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-trail-organization.html" }
+  - { title: "What is AWS Config?", url: "https://docs.aws.amazon.com/config/latest/developerguide/WhatIsConfig.html" }
+
+related: [organizations-scp, threat-detection]

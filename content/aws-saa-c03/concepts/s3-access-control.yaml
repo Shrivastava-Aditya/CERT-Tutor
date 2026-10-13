@@ -1,0 +1,40 @@
+id: s3-access-control
+domain: secure
+title: Controlling access to Amazon S3
+summary: Bucket policies, Block Public Access, presigned URLs, and letting only CloudFront read your bucket.
+icon: aws:s3
+
+teach: |
+  - **Block Public Access:** account-wide and bucket-wide switches that override any public bucket policy or ACL. On by default for new buckets.
+  - **Bucket policies:** JSON resource policies. Grant other accounts access, require encryption, or restrict to a VPC endpoint (`aws:SourceVpce`).
+  - **Origin access control (OAC):** CloudFront signs its requests to S3, and the bucket policy allows only that distribution, so **users can't bypass CloudFront**.
+  - **Presigned URLs:** time-limited links that let someone upload or download one object without AWS credentials.
+  - **Object Ownership:** set to *bucket owner enforced* to turn off ACLs entirely, which is the recommended setting.
+
+under_the_hood: |
+  S3 checks a request against the caller's IAM policies, the bucket policy, Block Public Access and any SCPs. As in all of IAM,
+  an explicit deny anywhere wins.
+
+  With OAC, CloudFront signs each origin request using AWS SigV4 as the CloudFront service principal. The bucket policy's
+  condition on `AWS:SourceArn` matches that one distribution, so even another CloudFront distribution can't read the bucket.
+
+observe:
+  - text: "Check whether a bucket blocks public access:"
+    cmd: "aws s3api get-public-access-block --bucket my-bucket"
+  - text: "Create a download link that works for 10 minutes:"
+    cmd: "aws s3 presign s3://my-bucket/report.pdf --expires-in 600"
+
+case_study: |
+  A media site's images were being hot-linked straight from S3 URLs, skipping CloudFront's caching and costing extra.
+  They turned on OAC, changed the bucket policy to allow only their distribution, and kept Block Public Access on.
+  Direct S3 links now return Access Denied, and every image is served from the CDN.
+
+other_clouds:
+  azure: "Storage account firewalls, shared access signatures (SAS), and Front Door with private origins"
+  gcp: "Uniform bucket-level access, signed URLs, and Cloud CDN with private origin authentication"
+
+links:
+  - { title: Restricting access to an S3 origin (OAC), url: "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html" }
+  - { title: Blocking public access to S3, url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html" }
+
+related: [s3-data-protection, cloudfront, kms-encryption]

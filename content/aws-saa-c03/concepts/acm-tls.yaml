@@ -1,0 +1,35 @@
+id: acm-tls
+domain: secure
+title: TLS certificates with ACM
+summary: Free public certificates that renew themselves, for load balancers, CloudFront and API Gateway.
+icon: aws:acm
+
+teach: |
+  - **AWS Certificate Manager (ACM)** issues **free public TLS certificates** and **renews them automatically**.
+  - Use them on **ALB, NLB (TLS listeners), CloudFront and API Gateway**. You can't download the private key, so you can't install them on your own EC2 web server.
+  - Validate domain ownership with a **DNS record** (best, since renewals stay automatic) or by email.
+  - **CloudFront certificates must be requested in us-east-1**. For an ALB, request the certificate in the ALB's own Region.
+  - Add an **HTTP → HTTPS redirect** rule on the ALB's port 80 listener.
+  - For TLS all the way to the instance, put your own certificate on the instance as well (ALB → target over HTTPS).
+
+under_the_hood: |
+  The load balancer terminates TLS: it holds the certificate, decrypts the request, and forwards it to your targets.
+  ACM renews DNS-validated certificates about 60 days before they expire by checking that the validation CNAME is still in place.
+
+observe:
+  - text: "When you add HTTPS to this tutor later, Let's Encrypt on your homelab plays the role ACM plays on AWS: free certificates that renew themselves."
+  - text: "Check a site's certificate and expiry date:"
+    cmd: "echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null | openssl x509 -noout -subject -dates"
+
+case_study: |
+  A company's certificate expired on a Friday night because the renewal reminder went to someone who'd left. They moved to an
+  ACM certificate with DNS validation on the ALB and a redirect from HTTP. Renewal is now automatic and nobody owns a calendar reminder.
+
+other_clouds:
+  azure: "App Service managed certificates, and Key Vault certificates for Application Gateway and Front Door"
+  gcp: "Google-managed SSL certificates and Certificate Manager"
+
+links:
+  - { title: "What is AWS Certificate Manager?", url: "https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html" }
+
+related: [edge-protection, cloudfront, load-balancers]

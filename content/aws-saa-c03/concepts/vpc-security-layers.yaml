@@ -1,0 +1,44 @@
+id: vpc-security-layers
+domain: secure
+title: Security groups and network ACLs
+summary: Two firewalls in every VPC. Security groups protect instances, network ACLs protect subnets.
+icon: aws:vpc-service
+
+teach: |
+  | | Security group | Network ACL |
+  |---|---|---|
+  | Applies to | Network interfaces (instances, load balancers, RDS) | A whole subnet |
+  | Rules | **Allow only** | **Allow and deny** |
+  | State | **Stateful**: replies are allowed automatically | **Stateless**: allow return traffic yourself |
+  | Order | All rules are checked together | Lowest rule number wins |
+
+  - To **block a specific IP range**, you need a network ACL, because security groups can't deny.
+  - Security groups can reference **other security groups**: "allow 5432 from the app tier's group" instead of IP addresses.
+  - **Public subnet** = its route table sends `0.0.0.0/0` to an internet gateway. **Private subnet** = no such route. Private instances reach the internet through a **NAT gateway**.
+
+under_the_hood: |
+  Stateful means the security group tracks each connection, so a reply to an allowed request gets through even if no
+  inbound rule matches. A network ACL forgets every packet, so for inbound web traffic you must also allow outbound
+  *ephemeral ports* (1024–65535) for the replies.
+
+  Traffic entering an instance passes the subnet's network ACL first, then the instance's security group.
+
+observe:
+  - text: "Your homelab's `ufw` is a stateful firewall like a security group. `ufw status` lists the allow rules."
+    cmd: "sudo ufw status numbered"
+  - text: "See a VPC's network ACL rules in order:"
+    cmd: "aws ec2 describe-network-acls --filters Name=vpc-id,Values=vpc-0123abcd --query 'NetworkAcls[].Entries'"
+
+case_study: |
+  A gaming company sees repeated attack traffic from one /24 range hitting its public subnet. They add rule 90, "deny all from
+  203.0.113.0/24", to the subnet's network ACL, ahead of the allow rules at 100. The attack stops, and normal players are untouched.
+
+other_clouds:
+  azure: "Network security groups (attach to subnets or NICs, support allow and deny with priorities)"
+  gcp: "VPC firewall rules and policies (stateful, allow and deny with priorities)"
+
+links:
+  - { title: Security groups, url: "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html" }
+  - { title: Network ACLs, url: "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html" }
+
+related: [vpc-endpoints, edge-protection]
