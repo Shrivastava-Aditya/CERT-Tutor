@@ -14,6 +14,7 @@ set -euo pipefail
 
 AWS_URL="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/architecture-icon-release/Icon-package_07312026.5846e92413caa21490223536cc97f1269e44fa92.zip"
 AZURE_URL="https://arch-center.azureedge.net/icons/Azure_Public_Service_Icons_V24.zip"
+GCP_BASE="https://services.google.com/fh/files/misc"   # from https://cloud.google.com/icons
 K8S_URL="https://raw.githubusercontent.com/cncf/artwork/main/projects/kubernetes/icon/color/kubernetes-icon-color.svg"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -35,6 +36,13 @@ unzip -q -o -j "$TMP/aws.zip" \
 echo "Downloading Azure icons..."
 curl -fsSL -o "$TMP/azure.zip" "$AZURE_URL"
 unzip -q -o -j "$TMP/azure.zip" '*.svg' -d "$DEST/azure"
+
+echo "Downloading Google Cloud icons..."
+mkdir -p "$DEST/gcp"
+for pack in core-products-icons category-icons; do
+  curl -fsSL -o "$TMP/$pack.zip" "$GCP_BASE/$pack.zip"
+  unzip -q -o -j "$TMP/$pack.zip" '*.svg' -d "$DEST/gcp"
+done
 
 echo "Downloading Kubernetes logo..."
 curl -fsSL -o "$DEST/k8s/kubernetes-icon-color.svg" "$K8S_URL"

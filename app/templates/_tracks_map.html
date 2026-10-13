@@ -1,41 +1,57 @@
-{# Transit-style map: one line per provider, one station per certification. #}
-<div class="map-scroll">
-<svg class="tracks-map" viewBox="0 0 {{ map.width }} {{ map.height }}" role="img" aria-labelledby="map-title">
-  <title id="map-title">Certification tracks for {{ map.tracks | map(attribute='name') | join(', ') }}</title>
-
-  {% for col in map.columns %}
-  <text class="col-title" x="{{ col.x }}" y="22" text-anchor="middle">{{ col.title }}</text>
-  {% endfor %}
-
-  {% for t in map.tracks %}
-  {% set ti = loop.index0 %}
-  <g class="track" style="--track: {{ t.color }}; --t: {{ ti }}">
-    <image href="{{ icon_url(t.logo) }}" x="24" y="{{ t.main_y - 22 }}" width="44" height="44" class="track-logo"/>
-    <text class="track-name" x="80" y="{{ t.main_y + 5 }}">{{ t.name }}</text>
-
-    {% for s in t.segments %}
-    <path class="seg" d="{{ s.d }}" pathLength="1" style="--s: {{ loop.index0 }}"/>
-    {% if s.active %}
-    {# A "train" that keeps running into the station you're working on #}
-    <circle class="train" r="5" style="offset-path: path('{{ s.d }}')"/>
-    {% endif %}
+{# Transit-style maps: one card per provider, one line per role, one station per certification.
+   Expects `map` (from load_tracks) and `shown` (the tracks to draw). #}
+<div class="tracks" id="tracks">
+{% for t in shown %}
+{% set ti = loop.index0 %}
+<section class="track-card" data-track="{{ t.id }}" style="--track: {{ t.color }}">
+  <header class="track-head">
+    <img src="{{ icon_url(t.logo) }}" alt="" width="40" height="40">
+    <div>
+      <h3>{{ t.name }}</h3>
+      <p class="track-meta">{{ t.count }} certifications{% if t.studying %} · {{ t.studying }} studying{% endif %}{% if t.passed %} · {{ t.passed }} passed{% endif %}</p>
+    </div>
+  </header>
+  <div class="map-scroll">
+  <svg class="tracks-map" viewBox="0 0 {{ map.width }} {{ t.height }}" role="img" aria-label="{{ t.name }} certification map">
+    {% for col in map.columns %}
+    <text class="col-title" x="{{ col.x }}" y="24" text-anchor="middle">{{ col.title }}</text>
     {% endfor %}
 
-    {% for c in t.certs %}
-    <g class="station is-{{ c.status }}" style="--c: {{ loop.index0 }}">
-      <title>{{ c.code }} · {{ c.name }} ({{ c.status }})</title>
-      {% if c.status == 'active' %}<circle class="pulse" cx="{{ c.x }}" cy="{{ c.y }}" r="12"/>{% endif %}
-      <circle class="dot" cx="{{ c.x }}" cy="{{ c.y }}" r="11"/>
-      <text class="code" x="{{ c.x }}" y="{{ c.y + 30 }}" text-anchor="middle">{{ c.code }}</text>
-      <text class="name" x="{{ c.x }}" y="{{ c.y + 46 }}" text-anchor="middle">{{ c.name }}</text>
+    {% for lane in t.lanes %}
+    {% set li = loop.index0 %}
+    <g class="lane{% if lane.sec %} is-sec{% endif %}" style="--l: {{ li }}">
+      <text class="lane-name" x="16" y="{{ lane.y + 4 }}">{{ lane.name }}</text>
+      {% for s in lane.segments %}
+      <path class="seg{% if s.lead %} lead{% endif %}" d="{{ s.d }}" pathLength="1" style="--s: {{ loop.index0 }}"/>
+      {% if s.active %}
+      {# A "train" that keeps running into the station you're studying #}
+      <circle class="train" r="5" style="offset-path: path('{{ s.d }}')"/>
+      {% endif %}
+      {% endfor %}
+
+      {% for c in lane.stations %}
+      <g class="station is-{{ c.status }}{% if c.sec %} is-sec{% endif %}" style="--c: {{ loop.index0 }}">
+        <title>{{ c.full or c.name }} ({{ c.code }}){% if c.note %} · {{ c.note }}{% endif %}{% if c.flag %} · {{ c.flag }}{% endif %}</title>
+        {% if c.status == 'active' %}<circle class="pulse" cx="{{ c.x }}" cy="{{ c.y }}" r="11"/>{% endif %}
+        {% if c.sec %}<circle class="sec-ring" cx="{{ c.x }}" cy="{{ c.y }}" r="16"/>{% endif %}
+        <circle class="dot" cx="{{ c.x }}" cy="{{ c.y }}" r="10"/>
+        <text class="code" x="{{ c.x }}" y="{{ c.y + 29 }}" text-anchor="middle">{{ c.code }}{% if c.star %}<tspan class="star"> ★</tspan>{% endif %}</text>
+        <text class="name" x="{{ c.x }}" y="{{ c.y + 44 }}" text-anchor="middle">{{ c.name }}</text>
+        {% if c.flag %}<text class="flag" x="{{ c.x }}" y="{{ c.y + 58 }}" text-anchor="middle">{{ c.flag }}</text>{% endif %}
+      </g>
+      {% endfor %}
     </g>
     {% endfor %}
-  </g>
-  {% endfor %}
-</svg>
+  </svg>
+  </div>
+</section>
+{% endfor %}
 </div>
 <ul class="map-legend">
   <li><span class="key is-active"></span>Studying now</li>
   <li><span class="key is-done"></span>Passed</li>
   <li><span class="key is-planned"></span>Planned</li>
+  <li><span class="key is-sec"></span>Security</li>
+  <li><span class="star">★</span>Kubestronaut set (all five)</li>
+  <li>Hover a station for its full name and notes</li>
 </ul>

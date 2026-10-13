@@ -26,7 +26,9 @@ templates.env.globals["icon_url"] = icon_url
 def home(request: Request):
     # Read the YAML on every request, so edits to tracks.yaml show up on refresh
     tracks = load_tracks(CONTENT_DIR / "tracks.yaml")
-    return templates.TemplateResponse(request, "home.html", {"title": "Cert Tutor", "map": tracks, "page": "home"})
+    # Home shows only the tracks you're studying; /tracks shows everything
+    shown = [t for t in tracks["tracks"] if t["studying"]]
+    return templates.TemplateResponse(request, "home.html", {"title": "Cert Tutor", "map": tracks, "shown": shown, "page": "home"})
 
 
 @app.get("/tracks", response_class=HTMLResponse)

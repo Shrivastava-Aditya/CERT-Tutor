@@ -1,39 +1,201 @@
 # Certification tracks shown on the tracks map.
-# col:    0 = start, 1 = core, 2 = advanced (left to right on the map)
-# lane:   0 = main line, 1 = branch drawn below it
-# after:  the cert this one follows (draws the line between them)
-# status: planned | active | done
-# content: folder in content/ once the course exists
+# Checked against the providers' official certification pages on 2026-10-13.
+#
+# Each track is a provider; each lane is a role line on that provider's map.
+#   col:    0 = Start, 1 = Core, 2 = Advanced, 3 = Specialty
+#   spread: true lays a lane's stations evenly across the width (for many small certs)
+#   status: planned | active | done
+#   sec:    true = security certification (highlighted by the Security focus filter)
+#   star:   true = part of the CNCF Kubestronaut set
+#   flag:   short warning shown under the station (retiring, beta)
+#   note:   extra detail shown on hover
+#   full:   official name, shown on hover
 
-columns: [Start, Core, Advanced]
+columns: [Start, Core, Advanced, Specialty]
 
 tracks:
   - id: aws
     name: AWS
     logo: aws:logo
     color: "#ff9900"
-    certs:
-      - { id: clf-c02, code: CLF-C02, name: Cloud Practitioner, col: 0, status: planned }
-      - { id: saa-c03, code: SAA-C03, name: Solutions Architect – Associate, col: 1, after: clf-c02, status: active, content: aws-saa-c03 }
-      - { id: sap-c02, code: SAP-C02, name: Solutions Architect – Professional, col: 2, after: saa-c03, status: planned }
-      - { id: dva-c02, code: DVA-C02, name: Developer – Associate, col: 1, lane: 1, after: clf-c02, status: planned }
+    lanes:
+      - name: Architect
+        certs:
+          - { code: CLF-C02, name: Cloud Practitioner, col: 0, full: AWS Certified Cloud Practitioner }
+          - { code: SAA-C03, name: Solutions Architect, col: 1, status: active, content: aws-saa-c03, full: AWS Certified Solutions Architect – Associate }
+          - { code: SAP-C02, name: SA Professional, col: 2, full: AWS Certified Solutions Architect – Professional, note: "Exam update to SAP-C03 announced" }
+      - name: Developer & DevOps
+        certs:
+          - { code: DVA-C02, name: Developer, col: 1, full: AWS Certified Developer – Associate, note: "Exam being updated (DVA-C03)" }
+          - { code: DOP-C02, name: DevOps Engineer, col: 2, full: AWS Certified DevOps Engineer – Professional }
+      - name: Operations
+        certs:
+          - { code: SOA-C03, name: CloudOps Engineer, col: 1, full: AWS Certified CloudOps Engineer – Associate }
+          - { code: ANS-C01, name: Advanced Networking, col: 3, full: AWS Certified Advanced Networking – Specialty, flag: "retires Dec 31 2026" }
+      - name: AI & ML
+        certs:
+          - { code: AIF-C01, name: AI Practitioner, col: 0, full: AWS Certified AI Practitioner }
+          - { code: MLA-C01, name: ML Engineer, col: 1, full: AWS Certified Machine Learning Engineer – Associate, note: "Exam being updated (MLA-C02)" }
+          - { code: AIP-C01, name: GenAI Developer, col: 2, full: AWS Certified Generative AI Developer – Professional }
+      - name: Data
+        certs:
+          - { code: DEA-C01, name: Data Engineer, col: 1, full: AWS Certified Data Engineer – Associate }
+      - name: Security
+        certs:
+          - { code: SCS-C03, name: Security Specialty, col: 3, sec: true, full: AWS Certified Security – Specialty }
+      - name: Business
+        certs:
+          - { code: AIB-C01, name: AI Business Strategist, col: 0, full: AWS Certified AI Business Strategist, flag: "beta" }
 
   - id: azure
-    name: Azure
+    name: Microsoft Azure
     logo: azure:logo
     color: "#50e6ff"
-    certs:
-      - { id: az-900, code: AZ-900, name: Azure Fundamentals, col: 0, status: planned }
-      - { id: az-104, code: AZ-104, name: Azure Administrator, col: 1, after: az-900, status: planned }
-      - { id: az-305, code: AZ-305, name: Solutions Architect Expert, col: 2, after: az-104, status: planned }
-      - { id: az-500, code: AZ-500, name: Security Engineer, col: 2, lane: 1, after: az-104, status: planned }
+    lanes:
+      - name: Infrastructure
+        certs:
+          - { code: AZ-900, name: Azure Fundamentals, col: 0, full: "Microsoft Certified: Azure Fundamentals" }
+          - { code: AZ-104, name: Administrator, col: 1, full: "Microsoft Certified: Azure Administrator Associate" }
+          - { code: AZ-305, name: Solutions Architect, col: 2, full: "Microsoft Certified: Azure Solutions Architect Expert", note: "Requires AZ-104" }
+          - { code: AZ-140, name: Virtual Desktop, col: 3, full: "Microsoft Certified: Azure Virtual Desktop Specialty" }
+      - name: DevOps
+        certs:
+          - { code: AZ-400, name: DevOps Engineer, col: 2, full: "Microsoft Certified: DevOps Engineer Expert", note: "Requires AZ-104" }
+      - name: Networking
+        certs:
+          - { code: AZ-700, name: Network Engineer, col: 1, full: "Microsoft Certified: Azure Network Engineer Associate" }
+      - name: SAP workloads
+        certs:
+          - { code: AZ-120, name: Azure for SAP, col: 3, full: "Microsoft Certified: Azure for SAP Workloads Specialty" }
+      - name: Security ops
+        certs:
+          - { code: SC-900, name: Security Fundamentals, col: 0, sec: true, full: "Microsoft Certified: Security, Compliance, and Identity Fundamentals" }
+          - { code: SC-200, name: SecOps Analyst, col: 1, sec: true, full: "Microsoft Certified: Security Operations Analyst Associate" }
+          - { code: SC-100, name: Cybersecurity Architect, col: 2, sec: true, full: "Microsoft Certified: Cybersecurity Architect Expert" }
+      - name: Identity
+        certs:
+          - { code: SC-300, name: Identity & Access, col: 1, sec: true, full: "Microsoft Certified: Identity and Access Administrator Associate" }
+      - name: Info protection
+        certs:
+          - { code: SC-401, name: Info Security Admin, col: 1, sec: true, full: "Microsoft Certified: Information Security Administrator Associate" }
+      - name: Data
+        certs:
+          - { code: DP-900, name: Data Fundamentals, col: 0, full: "Microsoft Certified: Azure Data Fundamentals" }
+          - { code: DP-300, name: Database Admin, col: 1, full: "Microsoft Certified: Azure Database Administrator Associate" }
+      - name: Analytics
+        certs:
+          - { code: DP-700, name: Fabric Data Engineer, col: 1, full: "Microsoft Certified: Fabric Data Engineer Associate" }
+      - name: AI
+        certs:
+          - { code: AI-901, name: AI Fundamentals, col: 0, full: "Microsoft Certified: Azure AI Fundamentals", note: "Replaced AI-900 (retired June 30 2026)" }
+          - { code: AI-103, name: AI Apps & Agents, col: 1, full: "Microsoft Certified: Azure AI Apps and Agents Developer Associate" }
+      - name: AI data
+        certs:
+          - { code: DP-420, name: Cosmos DB AI Dev, col: 1, full: "Microsoft Certified: Azure Cosmos DB AI Developer Associate" }
+
+  - id: gcp
+    name: Google Cloud
+    logo: gcp:logo
+    color: "#7cc5ff"
+    lanes:
+      - name: Architect
+        certs:
+          - { code: CDL, name: Cloud Digital Leader, col: 0, full: Cloud Digital Leader }
+          - { code: ACE, name: Cloud Engineer, col: 1, full: Associate Cloud Engineer }
+          - { code: PCA, name: Cloud Architect, col: 2, full: Professional Cloud Architect }
+      - name: Generative AI
+        certs:
+          - { code: GAIL, name: Gen AI Leader, col: 0, full: Generative AI Leader }
+          - { code: PAA, name: Agentic Architect, col: 2, full: Professional Agentic Architect }
+      - name: Machine learning
+        certs:
+          - { code: PMLE, name: ML Engineer, col: 2, full: Professional Machine Learning Engineer }
+      - name: Data
+        certs:
+          - { code: ADP, name: Data Practitioner, col: 1, full: Associate Data Practitioner }
+          - { code: PDE, name: Data Engineer, col: 2, full: Professional Data Engineer }
+      - name: Database
+        certs:
+          - { code: PCDBE, name: Database Engineer, col: 2, full: Professional Cloud Database Engineer }
+      - name: Developer
+        certs:
+          - { code: PCD, name: Cloud Developer, col: 2, full: Professional Cloud Developer }
+      - name: DevOps
+        certs:
+          - { code: PCDOE, name: DevOps Engineer, col: 2, full: Professional Cloud DevOps Engineer }
+      - name: Networking
+        certs:
+          - { code: PCNE, name: Network Engineer, col: 2, full: Professional Cloud Network Engineer }
+      - name: Security
+        certs:
+          - { code: PCSE, name: Security Engineer, col: 2, sec: true, full: Professional Cloud Security Engineer }
+      - name: Security ops
+        certs:
+          - { code: PSOE, name: SecOps Engineer, col: 2, sec: true, full: Professional Security Operations Engineer }
 
   - id: kubernetes
-    name: Kubernetes
+    name: Kubernetes & CNCF
     logo: k8s:logo
     color: "#7b9cff"
-    certs:
-      - { id: kcna, code: KCNA, name: Cloud Native Associate, col: 0, status: planned }
-      - { id: cka, code: CKA, name: Kubernetes Administrator, col: 1, after: kcna, status: planned }
-      - { id: cks, code: CKS, name: Kubernetes Security Specialist, col: 2, after: cka, status: planned }
-      - { id: ckad, code: CKAD, name: Application Developer, col: 1, lane: 1, after: kcna, status: planned }
+    lanes:
+      - name: Administrator
+        certs:
+          - { code: KCNA, name: Cloud Native Assoc., col: 0, star: true, full: Kubernetes and Cloud Native Associate }
+          - { code: CKA, name: K8s Administrator, col: 1, star: true, full: Certified Kubernetes Administrator }
+          - { code: CKS, name: K8s Security, col: 2, star: true, sec: true, full: Certified Kubernetes Security Specialist, note: "Requires an active CKA" }
+      - name: Developer
+        certs:
+          - { code: CKAD, name: App Developer, col: 1, star: true, full: Certified Kubernetes Application Developer }
+      - name: Security
+        certs:
+          - { code: KCSA, name: Security Associate, col: 0, star: true, sec: true, full: Kubernetes and Cloud Native Security Associate }
+      - name: Networking
+        certs:
+          - { code: CCA, name: Cilium, col: 0, full: Cilium Certified Associate }
+          - { code: CKNE, name: Network Engineer, col: 1, full: Certified Kubernetes Network Engineer }
+      - name: Platform
+        certs:
+          - { code: CNPA, name: Platform Associate, col: 0, full: Certified Cloud Native Platform Engineering Associate }
+          - { code: CNPE, name: Platform Engineer, col: 1, full: Certified Cloud Native Platform Engineer }
+      - name: Projects
+        spread: true
+        certs:
+          - { code: PCA, name: Prometheus, full: Prometheus Certified Associate }
+          - { code: OTCA, name: OpenTelemetry, full: OpenTelemetry Certified Associate }
+          - { code: CGOA, name: GitOps, full: Certified GitOps Associate }
+          - { code: CAPA, name: Argo, full: Certified Argo Project Associate }
+          - { code: CBA, name: Backstage, full: Certified Backstage Associate }
+          - { code: ICA, name: Istio, full: Istio Certified Associate }
+          - { code: KCA, name: Kyverno, full: Kyverno Certified Associate }
+
+  - id: security
+    name: Security
+    logo: security:logo
+    color: "#ff6b8a"
+    lanes:
+      - name: CompTIA path
+        certs:
+          - { code: Security+, name: CompTIA, col: 0, sec: true, full: CompTIA Security+ }
+          - { code: CySA+, name: CompTIA, col: 1, sec: true, full: CompTIA Cybersecurity Analyst (CySA+) }
+          - { code: SecurityX, name: CompTIA, col: 2, sec: true, full: CompTIA SecurityX (formerly CASP+) }
+      - name: Pen testing
+        certs:
+          - { code: PenTest+, name: CompTIA, col: 1, sec: true, full: CompTIA PenTest+ }
+          - { code: OSCP, name: OffSec, col: 2, sec: true, full: OffSec Certified Professional (OSCP) }
+      - name: Ethical hacking
+        certs:
+          - { code: CEH, name: EC-Council, col: 1, sec: true, full: Certified Ethical Hacker }
+      - name: ISC2 path
+        certs:
+          - { code: CC, name: ISC2, col: 0, sec: true, full: ISC2 Certified in Cybersecurity }
+          - { code: SSCP, name: ISC2, col: 1, sec: true, full: Systems Security Certified Practitioner }
+          - { code: CISSP, name: ISC2, col: 2, sec: true, full: Certified Information Systems Security Professional, note: "Needs 5 years of experience for full certification" }
+      - name: Cloud security
+        certs:
+          - { code: CCSP, name: ISC2, col: 2, sec: true, full: Certified Cloud Security Professional }
+      - name: Governance
+        certs:
+          - { code: CISM, name: ISACA, col: 2, sec: true, full: Certified Information Security Manager }
+      - name: Audit
+        certs:
+          - { code: CISA, name: ISACA, col: 2, sec: true, full: Certified Information Systems Auditor }

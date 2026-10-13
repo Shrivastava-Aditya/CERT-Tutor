@@ -4,8 +4,46 @@
   <header>
     <p class="eyebrow">Tracks</p>
     <h1 class="h1-sm">Where you're headed</h1>
-    <p class="lede">Each line is a provider and each stop is a certification. The pulsing stop is the one you're studying now.</p>
+    <p class="lede">Each card is a provider, each line is a role and each stop is a certification. The pulsing stop is the one you're studying now.</p>
   </header>
-  <section class="panel">{% include "_tracks_map.html" %}</section>
+
+  <div class="stat-strip">
+    <div><b>{{ map.tracks | length }}</b><span>tracks</span></div>
+    <div><b>{{ map.total }}</b><span>certifications</span></div>
+    <div><b>{{ map.studying }}</b><span>studying</span></div>
+    <div><b>{{ map.passed }}</b><span>passed</span></div>
+  </div>
+
+  <div class="filters" role="toolbar" aria-label="Filter tracks">
+    <div class="chips">
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+      {% for t in map.tracks %}
+      <button class="chip" data-filter="{{ t.id }}" aria-pressed="false" style="--track: {{ t.color }}">{{ t.name }} <span>{{ t.count }}</span></button>
+      {% endfor %}
+    </div>
+    <label class="focus-toggle" for="sec-focus"><input type="checkbox" id="sec-focus"> Security focus</label>
+  </div>
+
+  {% set shown = map.tracks %}
+  {% include "_tracks_map.html" %}
 </main>
+<script>
+  // Show one provider (or all). Re-showing a card replays its draw-in animation.
+  const cards = document.querySelectorAll(".track-card");
+  const chips = document.querySelectorAll(".chip");
+  chips.forEach(chip => chip.addEventListener("click", () => {
+    const f = chip.dataset.filter;
+    chips.forEach(c => c.setAttribute("aria-pressed", c === chip));
+    cards.forEach(card => { card.hidden = f !== "all" && card.dataset.track !== f; });
+    try { localStorage.setItem("tracks-filter", f); } catch (e) {}
+  }));
+  // Security focus: dim everything that isn't a security certification, across all providers
+  const focus = document.getElementById("sec-focus");
+  focus.addEventListener("change", () => document.getElementById("tracks").classList.toggle("focus-sec", focus.checked));
+  try {
+    const saved = localStorage.getItem("tracks-filter");
+    const chip = saved && document.querySelector(`.chip[data-filter="${saved}"]`);
+    if (chip) chip.click();
+  } catch (e) {}
+</script>
 {% endblock %}

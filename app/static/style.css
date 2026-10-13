@@ -17,6 +17,7 @@
   --mastered-soft: #12322a;
   --trap: #ff5d52;
   --trap-soft: #3e1816;
+  --sec: #ff6b8a;           /* security certifications */
   --aws-group: #00a4a6;     /* AWS's own colour for Region boxes in diagrams */
 
   --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
@@ -56,42 +57,76 @@ h3 { font: 600 20px var(--display); margin: 6px 0 4px; }
 .lede { font-size: 19px; color: var(--muted); max-width: 56ch; margin: 0; }
 
 /* ---- tracks map ---- */
+.tracks { display: grid; gap: 18px; }
+.track-card { background: var(--surface-2); border: 1px solid var(--line); border-top: 3px solid var(--track); border-radius: 12px; padding: 16px 16px 6px; min-width: 0; }
+.track-card[hidden] { display: none; }
+.track-head { display: flex; align-items: center; gap: 12px; }
+.track-head img { border-radius: 8px; animation: pop var(--step) ease-out both; }
+.track-head h3 { margin: 0; font-size: 21px; }
+.track-meta { margin: 0; font: 500 12px var(--mono); color: var(--muted); }
 .map-scroll { overflow-x: auto; }
-.tracks-map { display: block; width: 100%; min-width: 720px; height: auto; }
-.col-title { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; fill: var(--muted); }
-.track-name { font: 600 17px var(--display); fill: var(--ink); }
-.track-logo { transform-box: fill-box; transform-origin: center; animation: pop var(--step) ease-out both; animation-delay: calc(var(--t) * 350ms); }
+.tracks-map { display: block; width: 100%; min-width: 760px; height: auto; }
+.col-title { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; fill: var(--new); }
+.lane-name { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; fill: var(--muted); }
 
-/* Each .track sets --track to its provider colour (from tracks.yaml) */
+/* Each .track-card sets --track to its provider colour (from tracks.yaml) */
 .seg {
   fill: none; stroke: var(--track); stroke-width: 6; stroke-linecap: round;
   stroke-dasharray: 1; stroke-dashoffset: 1;
-  animation: draw 900ms cubic-bezier(.6, 0, .3, 1) forwards;
-  animation-delay: calc(300ms + var(--t) * 350ms + var(--s) * 250ms);
+  animation: draw 700ms cubic-bezier(.6, 0, .3, 1) forwards;
+  animation-delay: calc(150ms + var(--l) * 90ms + var(--s) * 200ms);
 }
+.seg.lead { stroke-width: 2; opacity: .45; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 
-.station { animation: pop var(--step) cubic-bezier(.2, .9, .3, 1.4) both; animation-delay: calc(900ms + var(--t) * 350ms + var(--c) * 120ms); transform-box: fill-box; transform-origin: center; }
+.station { animation: pop var(--step) cubic-bezier(.2, .9, .3, 1.4) both; animation-delay: calc(500ms + var(--l) * 90ms + var(--c) * 160ms); transform-box: fill-box; transform-origin: center; }
 .station .dot { stroke-width: 4; }
 .station.is-planned .dot { fill: var(--bg); stroke: var(--track); }
 .station.is-active .dot { fill: var(--track); stroke: var(--ink); }
 .station.is-done .dot { fill: var(--mastered); stroke: var(--track); }
 .station .pulse { fill: none; stroke: var(--track); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: ring 1.8s ease-out infinite; }
+.station .sec-ring { fill: none; stroke: var(--sec); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: .7; }
 .station .code { font: 700 13px var(--mono); fill: var(--ink); }
 .station .name { font: 400 12px var(--body); fill: var(--muted); }
-.station.is-planned .code { fill: var(--muted); }
+.station .flag { font: 500 10px var(--mono); fill: var(--learning); text-transform: uppercase; letter-spacing: .05em; }
+.station.is-planned .code { fill: #c9c9d1; }
+.star { fill: var(--learning); color: var(--learning); }
 
-.train { fill: #fff; filter: drop-shadow(0 0 6px var(--track)); animation: ride 2.6s ease-in-out 1.6s infinite both; }
+.train { fill: #fff; filter: drop-shadow(0 0 6px var(--track)); animation: ride 2.6s ease-in-out 1.4s infinite both; }
 @keyframes ride { 0% { offset-distance: 0%; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
 @keyframes ring { from { transform: scale(1); opacity: .9; } to { transform: scale(2.3); opacity: 0; } }
 @keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-.map-legend { display: flex; flex-wrap: wrap; gap: 18px; list-style: none; margin: 10px 0 0; padding: 0; font-size: 13px; color: var(--muted); }
+/* Security focus: everything that isn't security fades back */
+.lane, .station { transition: opacity .35s; }
+.focus-sec .lane:not(.is-sec) { opacity: .12; }
+.focus-sec .station:not(.is-sec) { opacity: .15; }
+.focus-sec .station.is-sec .sec-ring { opacity: 1; stroke-width: 2.5; animation: ring 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+
+.map-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; list-style: none; margin: 14px 0 0; padding: 0; font-size: 13px; color: var(--muted); }
 .map-legend li { display: flex; align-items: center; gap: 8px; }
 .key { width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--muted); }
 .key.is-active { background: var(--ink); border-color: var(--ink); box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--muted); }
 .key.is-done { background: var(--mastered); border-color: var(--mastered); }
 .key.is-planned { background: var(--bg); }
+.key.is-sec { background: transparent; border: 2px dashed var(--sec); width: 18px; height: 18px; }
+
+/* ---- tracks page controls ---- */
+.stat-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.stat-strip div { padding: 14px 16px; border-left: 1px solid var(--line); }
+.stat-strip div:first-child { border-left: 0; }
+.stat-strip b { display: block; font: 700 28px var(--mono); font-variant-numeric: tabular-nums; }
+.stat-strip span { font-size: 13px; color: var(--muted); }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 14px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.chip span { font: 500 11px var(--mono); color: var(--muted); }
+.chip:hover { border-color: var(--track, var(--accent)); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); box-shadow: inset 0 -3px 0 var(--track, var(--accent)); }
+.chip[aria-pressed="true"] span { color: var(--bg); }
+.focus-toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px dashed var(--sec); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.focus-toggle input { accent-color: var(--sec); }
+@media (max-width: 600px) { .stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stat-strip div:nth-child(3) { border-left: 0; } .stat-strip div:nth-child(n+3) { border-top: 1px solid var(--line); } }
 
 /* ---- architecture diagram ---- */
 .lesson-preview { display: grid; gap: 16px; }

@@ -13,6 +13,9 @@ ICONS = {
     "aws:logo": "aws/AWS-Cloud-logo_32_Dark.svg",
     "azure:logo": "azure/10018-icon-service-Azure-A.svg",
     "k8s:logo": "k8s/kubernetes-icon-color.svg",
+    # Google's icon packs don't include the Google Cloud logo. Drop one at
+    # app/static/vendor/gcp/logo.svg and it replaces the placeholder badge.
+    "gcp:logo": "gcp/logo.svg",
     # AWS groups (the boxes in a diagram)
     "aws:region": "aws/Region_32.svg",
     "aws:vpc": "aws/Virtual-private-cloud-VPC_32.svg",
@@ -51,9 +54,16 @@ ICONS = {
 }
 
 
+# Our own badges, used when there's no official logo we're allowed to use
+FALLBACKS = {
+    "gcp:logo": "/static/img/gcp-cloud.svg",
+    "security:logo": "/static/img/shield.svg",
+}
+
+
 def icon_url(key: str) -> str:
     """URL for an icon key, or a placeholder if the icon packages haven't been fetched."""
     rel = ICONS.get(key)
     if rel and (VENDOR_DIR / rel).is_file():
         return f"/static/vendor/{rel}"
-    return MISSING
+    return FALLBACKS.get(key, MISSING)
