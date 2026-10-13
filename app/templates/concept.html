@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="wrap dom-{{ domain.id }}">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="/tracks">Tracks</a><span>/</span><a href="/course/{{ course_id }}">{{ cert.code }}</a><span>/</span><span aria-current="page">{{ concept.title }}</span>
+  </nav>
+
+  <header class="concept-head">
+    <img src="{{ icon_url(concept.icon) }}" alt="" width="72" height="72">
+    <div>
+      <p class="eyebrow"><span class="dom-chip">{{ domain.name }}</span></p>
+      <h1 class="h1-sm">{{ concept.title }}</h1>
+      <p class="lede">{{ concept.summary }}</p>
+    </div>
+  </header>
+
+  <div class="concept-layout">
+    <article class="panel lesson" data-tabs>
+      <div class="tablist" role="tablist" aria-label="Lesson sections">
+        {% for field, tab_id, label in tabs %}
+        <button role="tab" id="tab-{{ tab_id }}" data-tab="{{ tab_id }}" aria-controls="panel-{{ tab_id }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+
+      {% for field, tab_id, label in tabs %}
+      <section role="tabpanel" id="panel-{{ tab_id }}" aria-labelledby="tab-{{ tab_id }}" class="tabpanel md">
+        {% if field == "observe" %}
+          <ul class="observe">
+          {% for o in concept.observe %}
+            <li>
+              {{ o.text | md }}
+              {% if o.cmd %}
+              <div class="cmd"><code>{{ o.cmd }}</code><button type="button" class="copy" data-copy="{{ o.cmd }}">Copy</button></div>
+              {% endif %}
+            </li>
+          {% endfor %}
+          </ul>
+        {% elif field == "other_clouds" %}
+          <dl class="clouds">
+            <div class="cloud cloud-aws"><dt><img src="{{ icon_url('aws:logo') }}" alt="" width="28" height="28">AWS</dt><dd>{{ concept.title }}</dd></div>
+            {% for key, value in concept.other_clouds.items() %}
+            <div class="cloud cloud-{{ key }}"><dt><img src="{{ icon_url(key ~ ':logo') }}" alt="" width="28" height="28">{{ cloud_names.get(key, key) }}</dt><dd>{{ value }}</dd></div>
+            {% endfor %}
+          </dl>
+        {% elif field == "links" %}
+          <ul class="links">
+          {% for l in concept.links %}
+            <li><a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.title }}</a><span>{{ l.url.split('/')[2] }}</span></li>
+          {% endfor %}
+          </ul>
+        {% else %}
+          {{ concept[field] | md }}
+        {% endif %}
+      </section>
+      {% endfor %}
+    </article>
+
+    <aside class="side">
+      <section class="panel">
+        <h2 class="side-title">Connected concepts</h2>
+        {% set focus = concept.id %}
+        {% set map_height = 300 %}
+        {% include "_concept_map.html" %}
+      </section>
+    </aside>
+  </div>
+
+  {% if patterns %}
+  <section class="patterns">
+    <h2>Exam patterns</h2>
+    <p class="note">The clue words that point to this answer, and the wrong answers the exam keeps offering.</p>
+    {% for p in patterns %}
+    <article class="pattern-card" style="--i: {{ loop.index0 }}">
+      <div class="clue-row">{% for clue in p.clues %}<span class="clue-chip">{{ clue }}</span>{% endfor %}</div>
+      <p class="rule-text">{{ p.rule }}</p>
+      <details>
+        <summary>{{ p.traps | length }} traps to avoid</summary>
+        <ul class="trap-list">
+          {% for t in p.traps %}<li><b>{{ t.option }}</b><span>{{ t.why }}</span></li>{% endfor %}
+        </ul>
+      </details>
+    </article>
+    {% endfor %}
+    <button class="btn" disabled title="Arrives in loop 4">Drill these patterns · loop 4</button>
+  </section>
+  {% endif %}
+
+  <nav class="pager" aria-label="More concepts">
+    {% if prev %}<a class="pager-prev" href="/course/{{ course_id }}/{{ prev.id }}"><span>Previous</span>{{ prev.title }}</a>{% else %}<span></span>{% endif %}
+    {% if next %}<a class="pager-next" href="/course/{{ course_id }}/{{ next.id }}"><span>Next</span>{{ next.title }}</a>{% endif %}
+  </nav>
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="/static/lib/d3-7.9.0.min.js"></script>
+<script src="/static/js/concept-map.js"></script>
+<script src="/static/js/lesson.js"></script>
+{% endblock %}

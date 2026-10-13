@@ -30,6 +30,7 @@
       {% endfor %}
 
       {% for c in lane.stations %}
+      {% if c.content %}<a class="station-link" href="/course/{{ c.content }}" aria-label="Open the {{ c.code }} course">{% endif %}
       <g class="station is-{{ c.status }}{% if c.sec %} is-sec{% endif %}" style="--c: {{ loop.index0 }}">
         <title>{{ c.full or c.name }} ({{ c.code }}){% if c.note %} · {{ c.note }}{% endif %}{% if c.flag %} · {{ c.flag }}{% endif %}</title>
         {% if c.status == 'active' %}<circle class="pulse" cx="{{ c.x }}" cy="{{ c.y }}" r="11"/>{% endif %}
@@ -39,6 +40,7 @@
         <text class="name" x="{{ c.x }}" y="{{ c.y + 44 }}" text-anchor="middle">{{ c.name }}</text>
         {% if c.flag %}<text class="flag" x="{{ c.x }}" y="{{ c.y + 58 }}" text-anchor="middle">{{ c.flag }}</text>{% endif %}
       </g>
+      {% if c.content %}</a>{% endif %}
       {% endfor %}
     </g>
     {% endfor %}

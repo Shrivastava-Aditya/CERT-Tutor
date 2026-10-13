@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="wrap">
+  <header>
+    <p class="eyebrow">{{ course.cert.code or course.root.name }}</p>
+    <h1 class="h1-sm">This course has content errors</h1>
+    <p class="lede">Fix these in the YAML, then refresh. You can also run <code>docker compose run --rm test python tools/validate.py content/{{ course.root.name }}</code>.</p>
+  </header>
+  <ul class="panel error-list">
+    {% for e in errors %}<li><code>{{ e.where }}</code> {{ e.message }}</li>{% endfor %}
+  </ul>
+</main>
+{% endblock %}

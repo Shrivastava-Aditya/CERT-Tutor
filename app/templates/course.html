@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/tracks">Tracks</a><span>/</span><span aria-current="page">{{ cert.code }}</span></nav>
+
+  <header class="course-head">
+    <img src="{{ logo }}" alt="" width="56" height="56">
+    <div>
+      <p class="eyebrow">{{ cert.code }}</p>
+      <h1 class="h1-sm">{{ cert.name }}</h1>
+    </div>
+  </header>
+
+  <div class="stat-strip">
+    <div><b>{{ counts.concepts }}</b><span>concepts written</span></div>
+    <div><b>{{ counts.patterns }}</b><span>exam patterns</span></div>
+    <div><b>{{ counts.questions }}</b><span>practice questions</span></div>
+    <div><b>{{ cert.exam.questions }} · {{ cert.exam.minutes }}m</b><span>real exam · pass {{ cert.exam.passing_score }}</span></div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Concept map</h2><span class="note">Lines join related concepts</span></div>
+    {% set focus = none %}
+    {% include "_concept_map.html" %}
+  </section>
+
+  {% for d in domains %}
+  <section class="domain dom-{{ d.id }}">
+    <header class="domain-head">
+      <h2>{{ d.name }}</h2>
+      <span class="weight"><i style="width: {{ d.weight * 3 }}px"></i>{{ d.weight }}% of the exam</span>
+    </header>
+    {% if d.concepts %}
+    <div class="concept-grid">
+      {% for c in d.concepts %}
+      <a class="concept-card" href="/course/{{ course_id }}/{{ c.id }}" style="--i: {{ loop.index0 }}">
+        <img src="{{ icon_url(c.icon) }}" alt="" width="44" height="44">
+        <div>
+          <h3>{{ c.title }}</h3>
+          <p>{{ c.summary }}</p>
+          <span class="card-meta">{{ stats[c.id].patterns | length }} patterns · {{ stats[c.id].questions }} questions</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty">No concepts written for this domain yet.</p>
+    {% endif %}
+  </section>
+  {% endfor %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="/static/lib/d3-7.9.0.min.js"></script>
+<script src="/static/js/concept-map.js"></script>
+{% endblock %}

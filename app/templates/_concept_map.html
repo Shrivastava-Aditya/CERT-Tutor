@@ -1,0 +1,10 @@
+{# Living concept map. Needs `graph`; optional `focus` (concept id) and `map_height`. #}
+<div class="cmap-wrap" data-concept-map data-height="{{ map_height or 420 }}"{% if focus %} data-focus="{{ focus }}"{% endif %}>
+  <script type="application/json">{{ graph | tojson }}</script>
+  <noscript><p class="note">The concept map needs JavaScript.</p></noscript>
+</div>
+<ul class="map-legend cmap-legend">
+  <li><span class="key key-new"></span>Not studied yet</li>
+  <li><span class="key key-ghost"></span>Related, not written yet</li>
+  <li>Drag nodes around · click one to open it</li>
+</ul>
