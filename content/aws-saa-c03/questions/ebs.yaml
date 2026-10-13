@@ -1,0 +1,35 @@
+- id: ebs-gp2-to-gp3-1
+  pattern: ebs-gp2-to-gp3
+  qualifier: most-cost-effective
+  stem: >-
+    A company has hundreds of gp2 EBS volumes. Most are 1 TB or smaller and run fine at 3,000 IOPS or
+    less. The company wants to lower storage costs without hurting performance or causing downtime.
+    What should a solutions architect do?
+  clues: [gp2, "3,000 IOPS", lower storage costs, downtime]
+  options:
+    - { text: "Change the volumes to gp3 using Elastic Volumes.", correct: true }
+    - { text: "Change the volumes to io2 to get guaranteed IOPS.", trap: io2-to-save-money }
+    - { text: "Change the volumes to st1 Throughput Optimized HDD.", trap: hdd-for-random-io }
+    - { text: "Take snapshots and delete the volumes.", trap: delete-to-save }
+  explain: >-
+    gp3 costs about 20% less per GB than gp2 and includes a 3,000 IOPS / 125 MiB/s baseline at any size,
+    and Elastic Volumes changes the type while the volume is in use. io2 costs more, st1 performs badly
+    for random I/O, and deleting volumes breaks the workloads.
+
+- id: ebs-very-high-iops-1
+  pattern: ebs-very-high-iops
+  qualifier: none
+  stem: >-
+    A company is moving a large Oracle database to EC2. The database needs about 200,000 IOPS of
+    consistent, durable block storage with sub-millisecond latency. Which EBS volume type should a
+    solutions architect choose?
+  clues: ["200,000 IOPS", durable, sub-millisecond]
+  options:
+    - { text: "Provisioned IOPS SSD io2 Block Express", correct: true }
+    - { text: "Throughput Optimized HDD (st1)", trap: hdd-for-iops }
+    - { text: "Cold HDD (sc1)", trap: hdd-for-iops }
+    - { text: "EC2 instance store", trap: instance-store-for-durable }
+  explain: >-
+    io2 Block Express goes up to 256,000 IOPS per volume with sub-millisecond latency and 99.999%
+    durability. st1 and sc1 are hard-drive volumes built for throughput, and instance store loses its data
+    when the instance stops.

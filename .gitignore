@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 *.db
 app/static/vendor/
+.pytest_cache/

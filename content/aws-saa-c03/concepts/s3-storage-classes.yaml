@@ -1,0 +1,48 @@
+id: s3-storage-classes
+domain: cost
+title: Amazon S3 storage classes
+summary: Choose where each object lives based on how often it's read and how fast it must come back.
+icon: aws:s3
+
+teach: |
+  Every S3 object has a storage class. Colder classes cost less to store but more to read, and some take hours to restore.
+
+  | Class | Use it when | Get it back |
+  |---|---|---|
+  | **Standard** | Data is read often | Milliseconds |
+  | **Intelligent-Tiering** | You can't predict how often data is read | Milliseconds. Moves objects between tiers automatically, with no retrieval fees. |
+  | **Standard-IA** | Data is read rarely but must come back instantly | Milliseconds, with a per-GB retrieval fee. Minimum 30 days. |
+  | **One Zone-IA** | Like Standard-IA, but the data can be recreated | Milliseconds. Stored in **one AZ** only. |
+  | **Glacier Instant Retrieval** | Archives read about once a quarter | Milliseconds. Minimum 90 days. |
+  | **Glacier Flexible Retrieval** | Archives that can wait | Minutes to hours. Minimum 90 days. |
+  | **Glacier Deep Archive** | Compliance archives kept for years | Within 12 hours (standard) or 48 hours (bulk). Cheapest class, minimum 180 days. |
+
+  **Lifecycle rules** move objects to colder classes automatically, for example "Standard-IA after 30 days, delete after 365".
+
+under_the_hood: |
+  S3 isn't a file system. It stores objects under keys, and the storage class is a property of each object,
+  so one bucket can mix classes. Lifecycle rules run in the background, usually within a day of an object qualifying.
+
+  The infrequent-access classes have two catches the exam loves: a **minimum storage duration** (deleting
+  early still bills the full period) and **retrieval fees**. That's why unpredictable access patterns
+  point to Intelligent-Tiering instead.
+
+observe:
+  - text: "Your homelab has the same trade-off: the internal NVMe SSD is fast and small, and the Ultra Touch USB drive is big, cheap and slower. Storage classes put a price on that difference."
+  - text: "See the storage class of each object in a bucket:"
+    cmd: "aws s3api list-objects-v2 --bucket my-bucket --query 'Contents[].[Key,StorageClass]' --output table"
+
+case_study: |
+  A shop's product photos are viewed constantly for a month after launch, then only a few times a month.
+  A lifecycle rule moves them to Standard-IA after 30 days. They still load instantly, are still stored across several AZs,
+  and cost much less to keep for the rest of the year.
+
+other_clouds:
+  azure: "Blob Storage access tiers: Hot, Cool, Cold and Archive, with lifecycle management"
+  gcp: "Cloud Storage classes: Standard, Nearline, Coldline and Archive, plus Autoclass"
+
+links:
+  - { title: Understanding S3 storage classes, url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html" }
+  - { title: Managing the lifecycle of objects, url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html" }
+
+related: [s3-data-protection, ebs-volume-types]

@@ -1,0 +1,45 @@
+id: fsx-windows
+domain: resilient
+title: Amazon FSx for Windows File Server
+summary: A fully managed Windows file server. Users reach it over SMB, and it joins your Active Directory.
+icon: aws:fsx-windows
+
+teach: |
+  FSx for Windows File Server gives you a real Windows file share without running Windows Server yourself.
+  Users map it like any network drive (`\\fs-0123.corp.example.com\share`), and apps keep using the same SMB paths.
+
+  - **Active Directory:** it joins AWS Managed Microsoft AD or your own on-premises AD, so existing groups and **NTFS permissions** keep working.
+  - **Deployment types:** *Single-AZ*, or *Multi-AZ*, which keeps an active file server plus a standby in a second AZ with automatic failover.
+  - **Storage:** SSD for busy shares, HDD for cheaper general-purpose shares.
+  - **Windows features included:** DFS namespaces, shadow copies (users restore files themselves with "Previous Versions"), data deduplication, and daily automatic backups.
+
+under_the_hood: |
+  Each file system is a Windows Server that AWS runs and patches for you, with storage attached.
+  Clients sign in with Kerberos through your AD, and NTFS access lists are stored with each file.
+
+  In **Multi-AZ** mode, every write is copied synchronously to the standby in the other AZ. If the active
+  server fails, the file system's DNS name switches to the standby and SMB clients reconnect on their own.
+  That's why Multi-AZ is the answer whenever a Windows share has to survive the loss of an AZ.
+
+observe:
+  - text: "Your homelab NAS plan uses Samba, which speaks the same SMB protocol. Opening `\\\\homelab\\ultratouch` from a Windows laptop feels the same as mapping an FSx share."
+  - text: "List your file systems and see whether they're Single-AZ or Multi-AZ:"
+    cmd: "aws fsx describe-file-systems --query 'FileSystems[].[FileSystemId,WindowsConfiguration.DeploymentType,StorageCapacity]'"
+  - text: "Map the share from a Windows client:"
+    cmd: 'net use Z: \\amznfsx0123abcd.corp.example.com\share'
+
+case_study: |
+  A 200-person architecture firm keeps its CAD drawings on an ageing Windows file server in a closet.
+  They copy the data to FSx for Windows with AWS DataSync, choose Multi-AZ, and join it to their existing AD.
+  Staff keep the same drive letters and folder permissions. Shadow copies let people undo their own
+  mistakes, so IT stops getting "please restore my file" tickets.
+
+other_clouds:
+  azure: "Azure Files over SMB (joins AD DS or Microsoft Entra Domain Services), or Azure NetApp Files"
+  gcp: "Google Cloud NetApp Volumes for SMB. Filestore only speaks NFS."
+
+links:
+  - { title: "What is FSx for Windows File Server?", url: "https://docs.aws.amazon.com/fsx/latest/WindowsGuide/what-is.html" }
+  - { title: Availability and durability (Single-AZ vs Multi-AZ), url: "https://docs.aws.amazon.com/fsx/latest/WindowsGuide/high-availability-multiAZ.html" }
+
+related: [efs, ebs-volume-types, s3-storage-classes]

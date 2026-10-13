@@ -1,0 +1,45 @@
+id: efs
+domain: resilient
+title: Amazon EFS
+summary: A managed NFS file system that many Linux instances in different AZs can share, and that grows by itself.
+icon: aws:efs
+
+teach: |
+  Amazon Elastic File System (EFS) is a shared folder for Linux. Hundreds or thousands of EC2 instances,
+  containers and Lambda functions can mount it at the same time and see the same files.
+
+  - **Protocol:** NFS (v4.0 and v4.1), so it's for Linux. Windows clients need FSx for Windows instead.
+  - **Elastic:** there's no size to pick. It grows and shrinks as you add and delete files, and you pay for what you store.
+  - **Regional by default:** data is stored across several AZs, with a *mount target* in each AZ. *One Zone* is a cheaper single-AZ option.
+  - **Storage classes:** Standard, Infrequent Access and Archive, with lifecycle rules that move cold files automatically.
+  - **Throughput modes:** Elastic (the default, scales automatically), Provisioned, or Bursting.
+
+under_the_hood: |
+  A mount target is a network interface with an IP address in one of your subnets. Instances talk NFS to it
+  over TCP port **2049**, so the security group on the mount target must allow 2049 from your instances.
+  That missing rule is the most common reason a mount hangs.
+
+  Files carry normal POSIX permissions (user, group, mode), exactly like files on your homelab disks.
+  *Access points* can force every client into one directory as one user, which is handy for giving each app its own folder.
+
+observe:
+  - text: "Your `/srv` disks are mounted through `/etc/fstab`. EFS mounts the same way, with one line (using the amazon-efs-utils helper):"
+    cmd: "fs-0123abcd:/ /mnt/shared efs _netdev,tls 0 0"
+  - text: "See the mount targets, one per AZ:"
+    cmd: "aws efs describe-mount-targets --file-system-id fs-0123abcd"
+
+case_study: |
+  A news site runs its content management system on an Auto Scaling group across three AZs. Editors upload
+  images through whichever instance the load balancer picks. With uploads on local disks, half the images
+  went "missing" depending on which server answered. Moving the uploads folder to EFS gives every instance the same
+  files, and the site keeps working if an AZ goes down.
+
+other_clouds:
+  azure: "Azure Files over NFS, or Azure NetApp Files"
+  gcp: "Filestore"
+
+links:
+  - { title: "What is Amazon EFS?", url: "https://docs.aws.amazon.com/efs/latest/ug/whatisefs.html" }
+  - { title: Mounting EFS file systems, url: "https://docs.aws.amazon.com/efs/latest/ug/mounting-fs.html" }
+
+related: [fsx-windows, ebs-volume-types]

@@ -1,0 +1,16 @@
+- id: ebs-gp2-to-gp3
+  concept: ebs-volume-types
+  clues: [gp2, "3,000 IOPS", lower storage costs, downtime]
+  rule: "Cheaper general-purpose SSD with the same or better baseline, changed live → gp3 using Elastic Volumes"
+  traps:
+    - { id: io2-to-save-money, option: io2, why: "io2 is the premium SSD. It costs more, not less." }
+    - { id: hdd-for-random-io, option: st1 / sc1 HDD, why: "Hard-drive volumes are built for big sequential reads and do badly at the random I/O of boot volumes and databases." }
+    - { id: delete-to-save, option: Snapshot and delete the volumes, why: "Saves money by breaking the workload. The question wants the same performance for less." }
+
+- id: ebs-very-high-iops
+  concept: ebs-volume-types
+  clues: ["200,000 IOPS", durable, sub-millisecond]
+  rule: "Huge, consistent, durable IOPS for a critical database → io2 Block Express"
+  traps:
+    - { id: hdd-for-iops, option: st1 / sc1 HDD, why: "HDD volumes are measured in throughput (MiB/s), not random IOPS." }
+    - { id: instance-store-for-durable, option: EC2 instance store, why: "Very fast, but temporary. The data is lost when the instance stops, so it fails 'durable'." }

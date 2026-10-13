@@ -1,0 +1,92 @@
+- id: s3-rare-but-instant-1
+  pattern: s3-rare-but-instant
+  qualifier: most-cost-effective
+  stem: >-
+    Users access product images in S3 heavily for the first 30 days after upload. After that, each image
+    is viewed only a few times a month, but it must still load in milliseconds and survive the loss of an
+    Availability Zone. Images are kept for 1 year. What is the MOST cost-effective approach?
+  clues: [first 30 days, a few times a month, milliseconds, loss of an Availability Zone]
+  options:
+    - { text: "Add an S3 Lifecycle rule that moves objects to S3 Standard-IA after 30 days.", correct: true }
+    - { text: "Add an S3 Lifecycle rule that moves objects to S3 Glacier Deep Archive after 30 days.", trap: deep-archive-for-instant }
+    - { text: "Add an S3 Lifecycle rule that moves objects to S3 One Zone-IA after 30 days.", trap: one-zone-for-az-loss }
+    - { text: "Keep all objects in S3 Standard for the full year.", trap: keep-everything-standard }
+  explain: >-
+    Standard-IA is cheaper to store, still returns objects in milliseconds, and keeps data across several AZs.
+    Deep Archive takes hours, One Zone-IA lives in one AZ, and staying in Standard overpays for rarely
+    viewed images.
+
+- id: s3-unpredictable-access-1
+  pattern: s3-unpredictable-access
+  qualifier: most-cost-effective
+  stem: >-
+    A data science team stores millions of objects in S3. Some datasets are used heavily for a few weeks,
+    then ignored, then used heavily again. The pattern is unpredictable and changes all the time. The team
+    wants to cut storage costs without any retrieval fees or lifecycle tuning. Which storage class should
+    they use?
+  clues: [unpredictable, changes all the time, without any retrieval fees]
+  options:
+    - { text: "S3 Intelligent-Tiering", correct: true }
+    - { text: "S3 Standard-IA", trap: ia-with-unpredictable-access }
+    - { text: "S3 Glacier Flexible Retrieval", trap: glacier-for-active-data }
+    - { text: "S3 One Zone-IA", trap: ia-with-unpredictable-access }
+  explain: >-
+    Intelligent-Tiering moves each object between access tiers based on how it's used, with no retrieval
+    fees, for a small monitoring charge per object. The IA classes charge per GB retrieved, and Glacier
+    Flexible Retrieval is too slow for data that's busy in bursts.
+
+- id: s3-long-term-archive-1
+  pattern: s3-long-term-archive
+  qualifier: most-cost-effective
+  stem: >-
+    A company must keep scanned legal documents for 10 years to meet regulations. The documents will almost
+    never be accessed, and when they are, waiting up to 48 hours is acceptable. Which storage option has
+    the lowest cost?
+  clues: [10 years, almost never be accessed, 48 hours]
+  options:
+    - { text: "S3 Glacier Deep Archive", correct: true }
+    - { text: "S3 Glacier Instant Retrieval", trap: paying-for-instant-archive }
+    - { text: "S3 Standard-IA", trap: paying-for-instant-archive }
+    - { text: "Amazon EBS Cold HDD (sc1) volumes", trap: ebs-for-archive }
+  explain: >-
+    Deep Archive is the cheapest S3 class: standard retrievals finish within 12 hours and bulk within 48.
+    Instant Retrieval and Standard-IA charge for millisecond access that isn't needed, and EBS costs far
+    more per GB.
+
+- id: s3-worm-compliance-1
+  pattern: s3-worm-compliance
+  qualifier: none
+  stem: >-
+    A financial services company must store trade records in Amazon S3 for 7 years. Regulators require that
+    no one, including the root user, can delete or overwrite the records during that period. Which
+    solution meets this requirement?
+  clues: [7 years, no one, root user, delete or overwrite]
+  options:
+    - { text: "Enable S3 Object Lock in compliance mode with a 7-year retention period.", correct: true }
+    - { text: "Enable S3 Object Lock in governance mode with a 7-year retention period.", trap: governance-mode-bypass }
+    - { text: "Enable versioning and MFA Delete on the bucket.", trap: mfa-delete-stops-root }
+    - { text: "Add a bucket policy that denies s3:DeleteObject to all IAM users.", trap: bucket-policy-as-lock }
+  explain: >-
+    Compliance mode stops everyone, root included, from deleting or overwriting a locked version until the
+    retention period ends. Governance locks can be bypassed with a special permission, MFA Delete doesn't stop
+    root, and bucket policies can be edited.
+
+- id: s3-recover-and-replicate-1
+  pattern: s3-recover-and-replicate
+  choose: 2
+  qualifier: none
+  stem: >-
+    A company keeps critical documents in an S3 bucket in eu-west-1. It must be able to recover from
+    accidental deletions or overwrites, and keep a copy of the data in case of a Regional outage. Which TWO
+    actions meet these requirements?
+  clues: [accidental deletions, overwrites, Regional outage]
+  options:
+    - { text: "Enable S3 Versioning on the bucket.", correct: true }
+    - { text: "Configure S3 Cross-Region Replication to a bucket in another Region.", correct: true }
+    - { text: "Enable S3 Transfer Acceleration.", trap: transfer-acceleration-for-protection }
+    - { text: "Move objects to S3 Intelligent-Tiering.", trap: intelligent-tiering-for-protection }
+    - { text: "Generate presigned URLs for all object access.", trap: presigned-urls-for-protection }
+  explain: >-
+    Versioning keeps every version so deletions and overwrites can be undone. Cross-Region Replication copies
+    objects to another Region and requires versioning on both buckets. The other options are about speed,
+    cost and access, not recovery.

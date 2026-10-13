@@ -1,0 +1,48 @@
+id: s3-data-protection
+domain: resilient
+title: Protecting data in Amazon S3
+summary: Versioning, replication and Object Lock protect objects from mistakes, disasters and tampering.
+icon: aws:s3
+
+teach: |
+  S3 keeps your data durable, but it won't stop you or anyone else deleting or overwriting it. These features do:
+
+  - **Versioning:** keeps every version of an object. A delete only adds a *delete marker*, and you can restore any earlier version.
+  - **Replication:** copies new objects to another bucket automatically, in another Region (**CRR**) or the same Region (**SRR**). Both buckets need versioning.
+  - **Object Lock:** write once, read many (WORM). Each version gets a retain-until date.
+    - **Governance mode:** users with a special permission can still remove the lock.
+    - **Compliance mode:** **nobody** can, not even the root user, until the date passes.
+    - **Legal hold:** a lock with no end date, until someone removes it.
+  - **MFA Delete:** requires a one-time code to permanently delete versions. It adds a step but doesn't stop the root user.
+  - **Block Public Access:** account-wide and bucket-wide switches that stop public bucket policies and ACLs.
+
+under_the_hood: |
+  With versioning on, each PUT creates a new version ID instead of replacing the old one, and you pay to
+  store every version. Pair it with lifecycle rules that expire old versions.
+
+  Replication is asynchronous and only copies objects written *after* the rule exists. For older objects
+  you run S3 Batch Replication. Object Lock records its retention settings on each object version, which
+  is why it needs versioning.
+
+observe:
+  - text: "Deleting a file on your exFAT Ultra Touch is permanent. A versioned bucket is like a drive that quietly keeps every old copy of every file."
+  - text: "Check whether versioning is on:"
+    cmd: "aws s3api get-bucket-versioning --bucket my-bucket"
+  - text: "See all versions of one object, including delete markers:"
+    cmd: "aws s3api list-object-versions --bucket my-bucket --prefix reports/q3.pdf"
+
+case_study: |
+  A brokerage must keep trade records for 7 years, and regulators require that nobody can alter them.
+  They turn on Object Lock in compliance mode with a 7-year default retention, replicate to a second Region
+  for disaster recovery, and block public access on both buckets.
+
+other_clouds:
+  azure: "Blob versioning, soft delete, immutable storage (WORM) and object replication"
+  gcp: "Object Versioning, soft delete, Bucket Lock and retention policies, dual-region buckets"
+
+links:
+  - { title: Using versioning in S3 buckets, url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html" }
+  - { title: Locking objects with Object Lock, url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html" }
+  - { title: Replicating objects, url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html" }
+
+related: [s3-storage-classes]

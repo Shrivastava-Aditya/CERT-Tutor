@@ -1,0 +1,23 @@
+id: aws-saa-c03
+code: SAA-C03
+name: AWS Certified Solutions Architect – Associate
+provider: aws
+exam:
+  questions: 65
+  minutes: 130
+  passing_score: 720
+  score_range: [100, 1000]
+domains:
+  - { id: secure, name: Design Secure Architectures, weight: 30 }
+  - { id: resilient, name: Design Resilient Architectures, weight: 26 }
+  - { id: performance, name: Design High-Performing Architectures, weight: 24 }
+  - { id: cost, name: Design Cost-Optimized Architectures, weight: 20 }
+# The phrases exam questions use to say which answer wins when several work
+qualifiers:
+  - none
+  - least-overhead      # "least operational overhead"
+  - most-cost-effective
+  - most-secure
+  - least-changes       # "minimal changes to the application"
+  - highest-availability
+  - lowest-latency

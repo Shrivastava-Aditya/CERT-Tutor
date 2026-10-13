@@ -1,0 +1,49 @@
+id: ebs-volume-types
+domain: performance
+title: Amazon EBS volume types
+summary: Network block disks for one EC2 instance in one AZ. Choose SSD or HDD based on IOPS, throughput and cost.
+icon: aws:ebs
+
+teach: |
+  An EBS volume is a disk that lives in one Availability Zone and attaches to an EC2 instance there.
+  You choose a volume type based on what the workload needs:
+
+  | Type | Built for | Remember |
+  |---|---|---|
+  | **gp3** | Most workloads, boot volumes | 3,000 IOPS and 125 MiB/s baseline at any size. About 20% cheaper per GB than gp2. You can add IOPS and throughput separately. |
+  | **gp2** | Older general-purpose volumes | IOPS grow with size (3 per GB). Usually worth moving to gp3. |
+  | **io2 Block Express** | Critical, very busy databases | Up to 256,000 IOPS, under a millisecond, 99.999% durability |
+  | **st1** | Big sequential reads: logs, data warehouses | HDD, cheap per MiB/s, bad at random I/O, can't be a boot volume |
+  | **sc1** | Cold data read rarely | Cheapest HDD |
+
+  **Snapshots** are incremental backups stored in S3. You can copy them to other Regions and restore them in any AZ.
+
+under_the_hood: |
+  An EBS volume is network-attached storage, copied within its own AZ. That's why it's tied to one AZ:
+  to move a volume, you snapshot it and restore the snapshot elsewhere.
+
+  *Elastic Volumes* change a volume's type, size or IOPS while it's in use, so gp2 → gp3 needs no downtime.
+  *Multi-Attach* (io1/io2 only, same AZ) lets several instances attach one volume, but a normal file system
+  like ext4 or NTFS will corrupt if two machines write at once. It needs a cluster-aware file system.
+
+observe:
+  - text: "Your homelab's `/srv` disks are fixed-size block devices you formatted with `mkfs.ext4` and mounted. An EBS volume is the same idea, delivered over the network. On an EC2 instance, `lsblk` shows it as an NVMe device, just like `nvme0n1` on your server."
+  - text: "List volumes with their type, IOPS, throughput and AZ:"
+    cmd: "aws ec2 describe-volumes --query 'Volumes[].[VolumeId,VolumeType,Iops,Throughput,AvailabilityZone]' --output table"
+  - text: "Change a gp2 volume to gp3 while it's in use:"
+    cmd: "aws ec2 modify-volume --volume-id vol-0123abcd --volume-type gp3"
+
+case_study: |
+  A company has hundreds of 500 GB gp2 volumes. At 3 IOPS per GB, each one gets 1,500 IOPS. Switching them
+  all to gp3 with Elastic Volumes cuts the storage bill by about a fifth and *raises* each volume to a
+  3,000 IOPS baseline. Nothing restarts.
+
+other_clouds:
+  azure: "Managed Disks: Standard HDD, Standard SSD, Premium SSD (v1 and v2), Ultra Disk"
+  gcp: "Persistent Disk and Hyperdisk"
+
+links:
+  - { title: Amazon EBS volume types, url: "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html" }
+  - { title: Modify a volume with Elastic Volumes, url: "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-modify-volume.html" }
+
+related: [efs, fsx-windows, s3-storage-classes]

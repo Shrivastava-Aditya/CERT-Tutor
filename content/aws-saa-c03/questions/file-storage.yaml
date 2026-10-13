@@ -1,0 +1,56 @@
+- id: fsx-windows-share-1
+  pattern: fsx-windows-share
+  qualifier: least-changes
+  stem: >-
+    A company is moving its on-premises Windows file server to AWS. About 200 employees reach the
+    file share from Windows desktops over SMB. Access is controlled by the company's existing Active
+    Directory groups and NTFS permissions. The solution must be highly available across Availability
+    Zones, and the company wants to avoid changing how users and applications reach the share.
+    Which solution meets these requirements?
+  clues: [Windows desktops, SMB, Active Directory, NTFS permissions, across Availability Zones]
+  options:
+    - { text: "Deploy Amazon FSx for Windows File Server in a Multi-AZ configuration, joined to the company's Active Directory.", correct: true }
+    - { text: "Create an Amazon EFS file system with Multi-AZ storage and mount it on the users' desktops.", trap: efs-for-windows }
+    - { text: "Deploy an Amazon S3 File Gateway and store the files in an S3 bucket with S3 Standard storage.", trap: s3-file-gateway-as-ha-share }
+    - { text: "Attach an io2 EBS volume with Multi-Attach enabled to two Windows EC2 instances in different Availability Zones.", trap: ebs-multi-attach-as-share }
+  explain: >-
+    FSx for Windows is a real Windows file server: it speaks SMB, joins AD, keeps NTFS permissions, and
+    Multi-AZ mode fails over to a standby in another AZ. EFS is NFS for Linux. S3 File Gateway is a
+    single hybrid gateway. EBS volumes live in one AZ and can't be shared safely by NTFS.
+
+- id: fsx-windows-share-2
+  pattern: fsx-windows-share
+  qualifier: least-overhead
+  stem: >-
+    A video production studio runs its editing workstations on Windows. Editors save projects to a
+    shared drive that uses NTFS permissions managed through Active Directory. The studio is closing its
+    server room and wants a fully managed SMB share on AWS that keeps working if one Availability Zone
+    fails, with the least operational overhead. What should a solutions architect recommend?
+  clues: [Windows, NTFS permissions, Active Directory, SMB share, Availability Zone fails]
+  options:
+    - { text: "Amazon FSx for Windows File Server with a Multi-AZ deployment, joined to the studio's AD.", correct: true }
+    - { text: "Amazon FSx for Lustre linked to an S3 bucket.", trap: fsx-lustre-for-windows }
+    - { text: "Amazon EFS with mount targets in two Availability Zones.", trap: efs-for-windows }
+    - { text: "A Windows EC2 instance with an io2 Multi-Attach volume shared with a second instance.", trap: ebs-multi-attach-as-share }
+  explain: >-
+    Fully managed, SMB, AD and NTFS add up to FSx for Windows, and Multi-AZ covers the AZ failure.
+    FSx for Lustre is for Linux HPC. EFS is NFS. A self-built EC2 file server is the opposite of low
+    overhead, and Multi-Attach can't be shared safely by NTFS.
+
+- id: efs-shared-linux-1
+  pattern: efs-shared-linux
+  qualifier: none
+  stem: >-
+    A company runs a content management system on Linux EC2 instances in an Auto Scaling group spread
+    across three Availability Zones. All instances must read and write the same set of files at the same
+    time, and the storage must grow automatically. Which storage should a solutions architect choose?
+  clues: [Linux, three Availability Zones, same set of files, grow automatically]
+  options:
+    - { text: "Amazon EFS file system with mount targets in each AZ", correct: true }
+    - { text: "Amazon EBS gp3 volume attached to every instance", trap: ebs-as-shared-fs }
+    - { text: "Instance store volumes on each instance, synced with cron", trap: instance-store-sync }
+    - { text: "Amazon FSx for Windows File Server", trap: fsx-windows-for-linux }
+  explain: >-
+    EFS is managed NFS that many Linux instances in different AZs can mount at once, and it grows
+    automatically. EBS attaches to instances in one AZ only, instance store is temporary, and FSx for
+    Windows is an SMB share for Windows workloads.

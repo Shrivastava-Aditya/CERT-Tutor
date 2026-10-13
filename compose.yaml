@@ -1,6 +1,8 @@
 services:
   cert-tutor:
-    build: .
+    build:
+      context: .
+      target: prod
     container_name: cert-tutor
     ports:
       - "8090:8000"                          # host port 8090 -> container port 8000
@@ -13,3 +15,14 @@ services:
       - /srv/appdata/cert-tutor:/data        # SQLite progress lives on the appdata disk
       - ./content:/app/content:ro            # course YAML, read-only inside the container
     restart: unless-stopped
+
+  # Tests and the content validator. Only starts when asked:
+  #   docker compose run --rm test
+  #   docker compose run --rm test python tools/validate.py content/aws-saa-c03
+  test:
+    build:
+      context: .
+      target: dev
+    profiles: [dev]
+    volumes:
+      - .:/app                               # the whole repo, so edits are tested without rebuilding

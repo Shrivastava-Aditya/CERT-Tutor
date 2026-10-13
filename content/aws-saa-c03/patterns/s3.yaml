@@ -1,0 +1,42 @@
+- id: s3-rare-but-instant
+  concept: s3-storage-classes
+  clues: [first 30 days, a few times a month, milliseconds, loss of an Availability Zone]
+  rule: "Rarely read but must load instantly and survive an AZ loss → S3 Standard-IA (via a lifecycle rule)"
+  traps:
+    - { id: deep-archive-for-instant, option: S3 Glacier Deep Archive, why: "Restores take up to 12 hours (48 for bulk). 'Milliseconds' rules it out." }
+    - { id: one-zone-for-az-loss, option: S3 One Zone-IA, why: "Stores data in a single AZ, so losing that AZ loses the data." }
+    - { id: keep-everything-standard, option: Keep everything in S3 Standard, why: "Works, but pays hot-storage prices for data that's rarely read." }
+
+- id: s3-unpredictable-access
+  concept: s3-storage-classes
+  clues: [unpredictable, changes all the time, without any retrieval fees]
+  rule: "Unknown or changing access patterns, no retrieval fees → S3 Intelligent-Tiering"
+  traps:
+    - { id: ia-with-unpredictable-access, option: S3 Standard-IA / One Zone-IA, why: "Charges per GB retrieved, which gets expensive when data suddenly turns hot again." }
+    - { id: glacier-for-active-data, option: S3 Glacier Flexible Retrieval, why: "Minutes to hours to restore. Too slow for data that's used heavily in bursts." }
+
+- id: s3-long-term-archive
+  concept: s3-storage-classes
+  clues: [10 years, almost never be accessed, 48 hours]
+  rule: "Rarely touched archive, retrieval can wait hours to days → S3 Glacier Deep Archive"
+  traps:
+    - { id: paying-for-instant-archive, option: S3 Glacier Instant Retrieval / Standard-IA, why: "You pay extra for millisecond access the question says it doesn't need." }
+    - { id: ebs-for-archive, option: EBS Cold HDD (sc1), why: "Block storage costs far more per GB than S3 archive classes and isn't built for keeping data for years." }
+
+- id: s3-worm-compliance
+  concept: s3-data-protection
+  clues: [no one, root user, delete or overwrite, 7 years]
+  rule: "Nobody, not even root, may delete or change records for N years → S3 Object Lock in compliance mode"
+  traps:
+    - { id: governance-mode-bypass, option: Object Lock governance mode, why: "Users with s3:BypassGovernanceRetention can remove governance locks." }
+    - { id: mfa-delete-stops-root, option: Versioning + MFA Delete, why: "Adds a step for deletes, but the root user can still delete." }
+    - { id: bucket-policy-as-lock, option: A bucket policy denying deletes, why: "Policies can be edited, and a deny aimed at IAM users doesn't cover the root user." }
+
+- id: s3-recover-and-replicate
+  concept: s3-data-protection
+  clues: [accidental deletions, overwrites, Regional outage]
+  rule: "Undo mistakes → Versioning. Survive a Region loss → Cross-Region Replication (which needs versioning)"
+  traps:
+    - { id: transfer-acceleration-for-protection, option: S3 Transfer Acceleration, why: "Speeds up long-distance uploads. It doesn't protect or copy data." }
+    - { id: intelligent-tiering-for-protection, option: S3 Intelligent-Tiering, why: "A cost feature that moves objects between tiers, not a backup." }
+    - { id: presigned-urls-for-protection, option: Presigned URLs, why: "Controls temporary access to objects. It doesn't keep copies." }

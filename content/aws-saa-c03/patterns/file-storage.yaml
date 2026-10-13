@@ -1,0 +1,19 @@
+# Patterns for shared file storage. Each trap is a wrong answer the exam keeps offering.
+- id: fsx-windows-share
+  concept: fsx-windows
+  clues: [Windows, SMB, Active Directory, NTFS]
+  rule: "Windows + SMB + Active Directory → FSx for Windows File Server (Multi-AZ when an AZ failure must be survived)"
+  traps:
+    - { id: efs-for-windows, option: Amazon EFS, why: "EFS speaks NFS, so it's Linux only. Windows desktops can't mount it, and it has no NTFS permissions." }
+    - { id: s3-file-gateway-as-ha-share, option: S3 File Gateway, why: "A hybrid tool that stores files as S3 objects. The gateway is a single machine, not Multi-AZ, and full NTFS behaviour isn't supported." }
+    - { id: ebs-multi-attach-as-share, option: EBS Multi-Attach, why: "EBS lives in one AZ, and NTFS corrupts when two machines write at once without a cluster-aware file system." }
+    - { id: fsx-lustre-for-windows, option: FSx for Lustre, why: "Lustre is a high-performance file system for Linux HPC and ML workloads, not a Windows share." }
+
+- id: efs-shared-linux
+  concept: efs
+  clues: [Linux, same set of files, Availability Zones, grow automatically]
+  rule: "Many Linux instances across AZs sharing the same files → EFS"
+  traps:
+    - { id: ebs-as-shared-fs, option: An EBS volume attached to every instance, why: "A standard EBS volume attaches to one instance in one AZ. Multi-Attach is io1/io2 only, stays in one AZ, and needs a cluster-aware file system." }
+    - { id: instance-store-sync, option: Instance store volumes synced with cron, why: "Instance store data disappears when an instance stops, and syncing copies by hand is fragile." }
+    - { id: fsx-windows-for-linux, option: FSx for Windows File Server, why: "It speaks SMB and is built for Windows workloads. Linux apps sharing files want NFS." }
