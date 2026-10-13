@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="wrap">
+  <header class="hero">
+    <p class="eyebrow">Loop 1 · skeleton</p>
+    <h1>Cert Tutor</h1>
+    <p class="lede">Learn the concept, spot the pattern, dodge the trap. A tutor for AWS, Kubernetes and beyond, running on your homelab.</p>
+  </header>
+
+  <!-- A preview of how pattern feedback will feel: clue words light up, then the rule flips in. -->
+  <section class="pattern-demo" aria-label="Pattern preview">
+    <p class="stem">
+      A company moves its file server to AWS. Staff connect from
+      <mark class="clue" style="--i:0">Windows</mark> desktops over
+      <mark class="clue" style="--i:1">SMB</mark>, access is controlled by
+      <mark class="clue" style="--i:2">Active Directory</mark> groups, and it must be
+      <mark class="clue" style="--i:3">Multi-AZ</mark>.
+    </p>
+    <div class="rule">
+      <span class="rule-label">Pattern</span>
+      <span>Windows + SMB + AD → <strong>FSx for Windows File Server</strong></span>
+      <span class="trap">Trap: EFS (NFS, Linux only)</span>
+    </div>
+  </section>
+
+  <!-- Build order from the plan: each card says which loop adds it. -->
+  <section class="modes" aria-label="What's coming">
+    <article class="mode"><span class="loop">Loop 3</span><h2>Learn</h2><p>Concept cards: under the hood, where to see it, other clouds.</p></article>
+    <article class="mode"><span class="loop">Loop 4</span><h2>Drill</h2><p>Pattern questions that show which clue you missed.</p></article>
+    <article class="mode"><span class="loop">Loop 5</span><h2>Review</h2><p>Spaced repetition brings back what you're forgetting.</p></article>
+    <article class="mode"><span class="loop">Loop 6</span><h2>Tutor</h2><p>Ask anything about the concept you're on.</p></article>
+    <article class="mode"><span class="loop">Loop 9</span><h2>Boss fight</h2><p>Timed mock exam with a domain health bar.</p></article>
+  </section>
+
+  <footer class="status">
+    <span class="dot" aria-hidden="true"></span> App is running · <a href="/health">/health</a>
+  </footer>
+</main>
+{% endblock %}

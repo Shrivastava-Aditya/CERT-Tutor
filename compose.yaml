@@ -1,0 +1,15 @@
+services:
+  cert-tutor:
+    build: .
+    container_name: cert-tutor
+    ports:
+      - "8090:8000"                          # host port 8090 -> container port 8000
+    env_file:
+      - path: .env                           # secrets such as the API key (loop 6); optional for now
+        required: false
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - /srv/appdata/cert-tutor:/data        # SQLite progress lives on the appdata disk
+      - ./content:/app/content:ro            # course YAML, read-only inside the container
+    restart: unless-stopped

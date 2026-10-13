@@ -1,0 +1,756 @@
+<title>SAA-C03 Practice Exam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: test-centre console. Sticky status bar (counter + timer), one question card, sticky nav bar. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --sunk: #e4e9ef;
+  --ink: #141c26;
+  --muted: #56637a;
+  --line: #d2d9e2;
+  --accent: #0d6e7a;
+  --accent-ink: #ffffff;
+  --accent-soft: #d6edef;
+  --flag: #9a5f0c;
+  --flag-soft: #f7e8cf;
+  --good: #1b7547;
+  --good-soft: #dbf0e3;
+  --bad: #ad372b;
+  --bad-soft: #f7dfdb;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1318; --surface: #161d25; --sunk: #1d2630; --ink: #e5eaf0; --muted: #94a2b3; --line: #2a3542;
+    --accent: #52b6c2; --accent-ink: #062a2f; --accent-soft: #143a40;
+    --flag: #e3a651; --flag-soft: #3a2c15; --good: #55c48f; --good-soft: #15352a; --bad: #f07466; --bad-soft: #3d1d1a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1318; --surface: #161d25; --sunk: #1d2630; --ink: #e5eaf0; --muted: #94a2b3; --line: #2a3542;
+  --accent: #52b6c2; --accent-ink: #062a2f; --accent-soft: #143a40;
+  --flag: #e3a651; --flag-soft: #3a2c15; --good: #55c48f; --good-soft: #15352a; --bad: #f07466; --bad-soft: #3d1d1a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 860px; margin: 0 auto; padding-inline: 16px; }
+
+/* ---------- start screen ---------- */
+.start { padding-block: 40px 64px; display: grid; gap: 28px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--cond); font-weight: 700; font-size: clamp(32px, 6vw, 46px); line-height: 1.05; margin: 6px 0 10px; letter-spacing: -.01em; text-wrap: balance; }
+h2 { font-family: var(--cond); font-weight: 600; font-size: 20px; margin: 0 0 12px; text-wrap: balance; }
+.lede { color: var(--muted); max-width: 62ch; margin: 0; }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.facts div { padding: 14px 16px; border-left: 1px solid var(--line); }
+.facts div:first-child { border-left: 0; }
+.facts b { display: block; font-family: var(--mono); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.facts span { font-size: 13px; color: var(--muted); }
+.modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.mode { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; cursor: pointer; display: grid; gap: 4px; }
+.mode:hover { border-color: var(--accent); }
+.mode[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.mode .t { font-weight: 600; }
+.mode .m { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mode .d { font-size: 13px; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.toggle { display: flex; gap: 10px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; cursor: pointer; }
+.toggle input { margin-top: 4px; accent-color: var(--accent); width: 16px; height: 16px; }
+.toggle small { display: block; color: var(--muted); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 9px 16px; cursor: pointer; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { border-color: var(--bad); color: var(--bad); }
+.btn.danger.armed { background: var(--bad); color: var(--surface); }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.btn.lg { padding: 12px 22px; font-size: 16px; }
+.banner { background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.banner p { margin: 0; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; }
+.domains { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.domains li { display: grid; grid-template-columns: minmax(0, 1fr) 48px; gap: 12px; align-items: center; }
+.wbar { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.wbar i { display: block; height: 100%; background: var(--accent); }
+.domains .pct { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.note { font-size: 13px; color: var(--muted); margin: 12px 0 0; max-width: 70ch; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- exam chrome ---------- */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.bar .ttl { font-family: var(--cond); font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.bar .ttl span { color: var(--muted); font-weight: 500; }
+.timer { font-family: var(--mono); font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; padding: 3px 10px; border-radius: 5px; background: var(--sunk); white-space: nowrap; }
+.timer.low { background: var(--bad-soft); color: var(--bad); }
+.prog { height: 3px; background: var(--sunk); }
+.prog i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+.exam { padding-block: 24px 120px; }
+.qhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
+.qnum { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip { display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; background: var(--sunk); color: var(--muted); white-space: nowrap; }
+.chip.good { background: var(--good-soft); color: var(--good); }
+.chip.bad { background: var(--bad-soft); color: var(--bad); }
+.chip.flag { background: var(--flag-soft); color: var(--flag); }
+.flagbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.flagbtn[aria-pressed="true"] { background: var(--flag-soft); border-color: var(--flag); color: var(--flag); font-weight: 600; }
+.flagbtn svg { width: 14px; height: 14px; }
+.stem { font-size: 17px; line-height: 1.6; margin: 0 0 8px; max-width: 70ch; }
+.instr { font-weight: 600; margin: 0 0 16px; }
+.instr.warn { color: var(--flag); }
+.opts { display: grid; gap: 10px; }
+.opt { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 13px 14px; cursor: pointer; line-height: 1.5; }
+.opt:hover { border-color: var(--muted); }
+.opt .k { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--muted); }
+.opt.single .k { border-radius: 50%; }
+.opt.multi .k { border-radius: 4px; }
+.opt[aria-checked="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.opt[aria-checked="true"] .k { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.opt.is-right { border-color: var(--good); box-shadow: inset 0 0 0 1px var(--good); background: var(--good-soft); }
+.opt.is-right .k { background: var(--good); border-color: var(--good); color: var(--surface); }
+.opt.is-wrong { border-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); background: var(--bad-soft); }
+.opt.is-wrong .k { background: var(--bad); border-color: var(--bad); color: var(--surface); }
+.opt:disabled { cursor: default; }
+.feedback { margin-top: 18px; border-radius: 8px; padding: 14px 16px; border: 1px solid var(--line); background: var(--surface); }
+.feedback.good { border-color: var(--good); }
+.feedback.bad { border-color: var(--bad); }
+.feedback h3 { margin: 0 0 6px; font-size: 15px; }
+.feedback.good h3 { color: var(--good); }
+.feedback.bad h3 { color: var(--bad); }
+.feedback p { margin: 0; max-width: 72ch; }
+.nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.nav .wrap { display: flex; gap: 10px; justify-content: space-between; align-items: center; padding-block: 10px; }
+.nav .mid { display: flex; gap: 10px; }
+.kbd { font-size: 12px; color: var(--muted); text-align: center; margin-top: 22px; }
+.kbd kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+
+/* ---------- review grid ---------- */
+.review { padding-block: 28px 64px; display: grid; gap: 20px; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--line); display: inline-block; }
+.sw.ans { background: var(--accent); border-color: var(--accent); }
+.sw.flg { background: var(--flag-soft); border-color: var(--flag); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; }
+.tile { position: relative; height: 44px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); font-family: var(--mono); font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+.tile.ans { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tile.flg::after { content: ""; position: absolute; top: 3px; right: 3px; width: 0; height: 0; border-left: 9px solid transparent; border-top: 9px solid var(--flag); }
+.tile.flg { box-shadow: inset 0 0 0 2px var(--flag); }
+.counts { display: flex; flex-wrap: wrap; gap: 24px; }
+.counts div b { display: block; font-family: var(--mono); font-size: 26px; font-variant-numeric: tabular-nums; }
+.counts div span { font-size: 13px; color: var(--muted); }
+.confirm { border: 1px solid var(--bad); background: var(--bad-soft); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; }
+.confirm p { margin: 0; }
+
+/* ---------- results ---------- */
+.results { padding-block: 32px 64px; display: grid; gap: 22px; }
+.score { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: center; }
+.score .big { font-family: var(--mono); font-size: clamp(54px, 12vw, 80px); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.verdict { font-family: var(--cond); font-size: 26px; font-weight: 700; margin: 0 0 4px; }
+.verdict.pass { color: var(--good); }
+.verdict.fail { color: var(--bad); }
+.scale { position: relative; height: 10px; background: var(--sunk); border-radius: 5px; margin: 26px 0 8px; }
+.scale .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
+.scale .cut { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--ink); }
+.scale .cut span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 11px; white-space: nowrap; padding-bottom: 2px; }
+.scale-ends { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; color: var(--muted); margin-top: 10px; }
+.stats b { color: var(--ink); font-family: var(--mono); font-weight: 600; }
+.drow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; padding-block: 12px; border-bottom: 1px solid var(--line); }
+.drow:last-child { border-bottom: 0; }
+.drow .n { font-weight: 600; min-width: 0; }
+.drow .n small { color: var(--muted); font-weight: 400; font-family: var(--mono); margin-left: 6px; }
+.drow .bar2 { grid-column: 1 / -1; height: 8px; background: var(--sunk); border-radius: 4px; overflow: hidden; position: relative; }
+.drow .bar2 i { display: block; height: 100%; }
+.drow .bar2 .mk { position: absolute; top: 0; bottom: 0; left: 70%; width: 2px; background: var(--ink); opacity: .5; }
+.drow .meta { grid-column: 1 / -1; font-size: 13px; color: var(--muted); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 14px; cursor: pointer; font-size: 14px; }
+.tab[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.ritem { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; display: grid; gap: 12px; }
+.ritem .top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ritem .stem { font-size: 15.5px; margin: 0; }
+.ritem .opts { gap: 8px; }
+.ritem .opt { cursor: default; padding: 10px 12px; }
+.ritem .opt .tag { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; margin-top: 4px; }
+.ritem .opt.is-right .tag { color: var(--good); }
+.ritem .opt.is-wrong .tag { color: var(--bad); }
+.expl { background: var(--sunk); border-radius: 6px; padding: 12px 14px; font-size: 14.5px; }
+.expl b { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px; }
+.empty { color: var(--muted); padding: 16px 0; }
+.disclaimer { font-size: 12px; color: var(--muted); max-width: 70ch; }
+
+@media (max-width: 640px) {
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facts div:nth-child(3) { border-left: 0; }
+  .facts div:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .modes { grid-template-columns: minmax(0, 1fr); }
+  .score { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .nav .btn { padding: 9px 12px; }
+  .stem { font-size: 16px; }
+  .kbd { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="app"></div>
+
+<script>
+const DOM = {
+  sec:  { name: "Design Secure Architectures", short: "Secure", w: 30 },
+  res:  { name: "Design Resilient Architectures", short: "Resilient", w: 26 },
+  perf: { name: "Design High-Performing Architectures", short: "High-performing", w: 24 },
+  cost: { name: "Design Cost-Optimized Architectures", short: "Cost-optimized", w: 20 }
+};
+const MODES = {
+  full:   { n: 65, min: 130, t: "Full exam", d: "Same length and time limit as the real exam." },
+  half:   { n: 30, min: 60,  t: "Half exam", d: "Weighted by domain. Good for a mid-week check." },
+  sprint: { n: 10, min: 20,  t: "Sprint", d: "Ten questions for a quick daily session." }
+};
+const PASS = 720;
+
+const Q = [
+// ---------------- Secure (30%) ----------------
+{d:"sec", q:"A company runs an application on EC2 instances in a private subnet. The application reads and writes objects in an Amazon S3 bucket in the same Region. A new security policy states that this traffic must not travel over the public internet, and the company wants to avoid extra data processing charges. Which solution meets these requirements?",
+ o:["Create a gateway VPC endpoint for Amazon S3 and add it to the private subnet's route table.","Deploy a NAT gateway in a public subnet and route S3 traffic through it.","Attach an internet gateway to the VPC and give the instances public IP addresses.","Set up an AWS Site-to-Site VPN connection and route S3 traffic over the tunnel."], a:[0],
+ x:"A gateway endpoint keeps S3 traffic on the AWS network and has no hourly or data processing charge. A NAT gateway and an internet gateway both send traffic to S3's public endpoints, and the NAT gateway charges per GB processed. A Site-to-Site VPN connects to on-premises networks and does nothing for VPC-to-S3 traffic."},
+{d:"sec", q:"An application running on Amazon EC2 needs to read and write items in an Amazon DynamoDB table. The security team does not allow long-term credentials to be stored on instances or in code. What is the MOST secure way to grant access?",
+ o:["Create an IAM role with DynamoDB permissions and attach it to the instances through an instance profile.","Create an IAM user, generate access keys, and store them in environment variables on the instances.","Create an IAM user and bake its access keys into the AMI used by the Auto Scaling group.","Store an IAM user's access keys in AWS Secrets Manager and have the application fetch them at startup."], a:[0],
+ x:"An instance profile delivers temporary credentials from the role, which rotate automatically through the instance metadata service. Every other option still relies on an IAM user's long-term access keys. Secrets Manager hides them better, but they are still long-term keys that must be rotated."},
+{d:"sec", q:"A company stores database credentials for an Amazon RDS for MySQL database. Compliance requires that the password be rotated every 30 days automatically, with no application downtime and minimal custom code. Which service should the company use?",
+ o:["AWS Secrets Manager with automatic rotation enabled","AWS Systems Manager Parameter Store SecureString parameters","AWS KMS with automatic key rotation enabled","Lambda environment variables encrypted with a customer managed key"], a:[0],
+ x:"Secrets Manager has built-in rotation for RDS that updates both the secret and the database password on a schedule. Parameter Store SecureString encrypts values but has no native rotation. KMS key rotation changes encryption key material, not database passwords. Environment variables would need a redeploy every time the password changes."},
+{d:"sec", q:"A media company serves images from an Amazon S3 bucket through an Amazon CloudFront distribution. Users are bypassing CloudFront and downloading files directly from the S3 URLs. The company must ensure the objects can only be accessed through CloudFront. What should a solutions architect do?",
+ o:["Configure origin access control (OAC) on the distribution, and update the bucket policy to allow only the CloudFront service principal for that distribution.","Enable S3 static website hosting and restrict access with a Referer header condition in the bucket policy.","Enable S3 Transfer Acceleration and turn off public access to the standard endpoint.","Use CloudFront signed URLs and keep the bucket publicly readable."], a:[0],
+ x:"OAC lets CloudFront sign requests to S3, and the bucket policy then allows reads only from that distribution, so direct S3 requests are denied. Referer headers are easy to fake. Transfer Acceleration speeds up transfers and has nothing to do with access control. Signed URLs control who can use CloudFront, but a public bucket can still be read directly."},
+{d:"sec", q:"A company uses AWS Organizations with dozens of member accounts. The security team must prevent anyone in member accounts, including account administrators, from stopping or deleting AWS CloudTrail trails. Which solution meets this requirement?",
+ o:["Attach a service control policy (SCP) to the organizational units that denies cloudtrail:StopLogging and cloudtrail:DeleteTrail.","Create an IAM policy in each account that denies the CloudTrail actions and attach it to all IAM users.","Create an AWS Config rule that detects when a trail is stopped and sends an alert.","Attach a permissions boundary to every IAM role that denies the CloudTrail actions."], a:[0],
+ x:"An SCP sets the maximum permissions for every principal in the member accounts, including administrators, and they cannot remove it from inside the account. IAM policies and permissions boundaries can be changed or detached by an account administrator. An AWS Config rule only detects the change after it happens. It does not prevent it."},
+{d:"sec", q:"A public web application runs behind an Application Load Balancer. The security team has seen attempts at SQL injection and cross-site scripting (XSS) in the logs. They want to block these requests with the least operational overhead. What should a solutions architect recommend?",
+ o:["Associate AWS WAF with the ALB and enable AWS managed rule groups for SQL injection and XSS.","Enable AWS Shield Standard on the ALB.","Add deny rules to the security group attached to the ALB.","Enable Amazon GuardDuty in the account."], a:[0],
+ x:"AWS WAF inspects HTTP requests at layer 7, and its managed rule groups block common SQL injection and XSS patterns without you writing rules. Shield Standard protects against network-level DDoS attacks, not malicious request content. Security groups cannot inspect requests and cannot have deny rules. GuardDuty detects threats but does not block requests."},
+{d:"sec", q:"A company's policy requires that every new Amazon EBS volume created in the us-east-1 Region is encrypted. Teams create volumes from the console, the CLI, and infrastructure as code. What is the simplest way to enforce this?",
+ o:["Turn on EBS encryption by default for the account in us-east-1.","Create an AWS Config rule that reports unencrypted EBS volumes.","Turn on default encryption for all S3 buckets in the account.","Ask each team to set the Encrypted flag in their templates and review them weekly."], a:[0],
+ x:"With EBS encryption by default turned on, every new volume in that Region is encrypted automatically, whatever tool creates it. A Config rule only reports unencrypted volumes after they exist. S3 default encryption does not affect EBS. Manual reviews are error-prone and are not enforcement."},
+{d:"sec", q:"A company stores sensitive files in Amazon S3. Auditors require that the company control the encryption key policy, be able to disable the key immediately, and see every use of the key in AWS CloudTrail. The solution must require minimal changes to the application. Which encryption option meets these requirements?",
+ o:["Server-side encryption with a customer managed AWS KMS key (SSE-KMS)","Server-side encryption with Amazon S3 managed keys (SSE-S3)","Server-side encryption with the AWS managed KMS key for S3 (aws/s3)","Client-side encryption with keys stored on the application servers"], a:[0],
+ x:"A customer managed KMS key lets you edit its key policy, disable it at any time, and see every use of it in CloudTrail, while S3 still handles the encryption. With SSE-S3 you never see or control the key. The AWS managed aws/s3 key appears in CloudTrail, but you cannot change its policy or disable it. Client-side encryption means changing the application and handling key storage yourself."},
+{d:"sec", q:"A company has Linux EC2 instances in private subnets. Administrators need shell access to them. The security team requires that no inbound ports are open, no bastion hosts are used, and every session is logged. Which TWO actions should a solutions architect take?",
+ o:["Attach an IAM instance profile that includes the AmazonSSMManagedInstanceCore policy.","Have administrators connect using AWS Systems Manager Session Manager with session logging to S3 or CloudWatch Logs.","Launch a bastion host in a public subnet with port 22 open to the administrators' IP addresses.","Store the SSH key pair in an S3 bucket and let administrators download it.","Assign Elastic IP addresses to the instances and restrict port 22 in the security group."], a:[0,1],
+ x:"Session Manager opens shell sessions through the SSM Agent's outbound connection, so no inbound ports or bastion are needed, and it can log every session to S3 or CloudWatch Logs. The instance profile gives the agent permission to register with Systems Manager. Private instances also need a route to Systems Manager, either through VPC interface endpoints or a NAT gateway. A bastion, shared SSH keys, and Elastic IPs all break the stated requirements."},
+{d:"sec", q:"A security team wants a managed service that continuously analyzes VPC Flow Logs, DNS query logs, and CloudTrail events to detect threats such as EC2 instances communicating with known cryptocurrency-mining domains. Which service should they enable?",
+ o:["Amazon GuardDuty","Amazon Inspector","Amazon Macie","AWS Trusted Advisor"], a:[0],
+ x:"GuardDuty analyzes Flow Logs, DNS logs, and CloudTrail events to spot threats such as crypto-mining and compromised credentials. Inspector scans EC2 instances, container images, and Lambda functions for software vulnerabilities. Macie finds sensitive data in S3. Trusted Advisor checks your account against best practices."},
+{d:"sec", q:"A healthcare company has hundreds of S3 buckets created over many years. The compliance team must find out which buckets contain personally identifiable information (PII), such as names and passport numbers, and get ongoing alerts if new PII appears. Which service meets this need with the least effort?",
+ o:["Amazon Macie","Amazon GuardDuty","AWS Config","Amazon Detective"], a:[0],
+ x:"Macie uses machine learning and pattern matching to find sensitive data such as PII in S3 and can keep monitoring buckets for new findings. GuardDuty looks for threats, not data content. AWS Config tracks how resources are configured. Detective helps investigate security findings after they happen."},
+{d:"sec", q:"A mobile app lets users sign up, sign in, and upload photos directly to an S3 bucket. The company does not want to manage user credentials or proxy uploads through its own servers, and each user should only get temporary, limited AWS credentials. Which solution meets these requirements?",
+ o:["Use an Amazon Cognito user pool for sign-in and a Cognito identity pool to exchange tokens for temporary AWS credentials scoped to the user's prefix.","Create an IAM user for each app user and send the access keys to the device after sign-in.","Embed one IAM user's access keys in the mobile app with s3:PutObject permission.","Make the bucket publicly writable and validate uploads with an S3 event notification."], a:[0],
+ x:"The user pool handles sign-up and sign-in, and the identity pool swaps the user's token for short-lived credentials from an IAM role that can be limited to that user's prefix. One IAM user per app user does not scale and hands out long-term keys. Keys embedded in an app can be extracted. A publicly writable bucket can be abused by anyone."},
+{d:"sec", q:"Logs show repeated attack traffic against a public subnet's EC2 instances coming from a specific IP range, 203.0.113.0/24. The team needs to block all traffic from this range to the subnet immediately. What should they do?",
+ o:["Add an inbound deny rule for 203.0.113.0/24 to the subnet's network ACL, with a lower rule number than the allow rules.","Add an inbound deny rule for 203.0.113.0/24 to the instances' security group.","Remove the route to the internet gateway from the subnet's route table.","Enable AWS Shield Standard for the instances."], a:[0],
+ x:"Network ACLs support explicit deny rules and are evaluated in order of rule number, so a low-numbered deny blocks the range before any allow rule matches. Security groups support only allow rules. Removing the internet route cuts off every user, not just the attackers. Shield Standard protects against DDoS attacks in general and cannot block a chosen range."},
+{d:"sec", q:"A Lambda function in Account B needs to read objects from an S3 bucket in Account A. The company wants to follow AWS best practices and avoid long-term credentials. What should a solutions architect do?",
+ o:["Create an IAM role in Account A with read access to the bucket and a trust policy that allows the Lambda execution role in Account B to assume it, and have the function call sts:AssumeRole.","Create an IAM user in Account A, generate access keys, and store them in the Lambda function's environment variables.","Share Account A's root user credentials with the Account B team through Secrets Manager.","Make the bucket public and restrict access with an obscure object prefix."], a:[0],
+ x:"A cross-account role gives the function temporary credentials, and the trust policy controls exactly who can assume the role. A bucket policy that grants Account B's role access would also work, but that option is not listed. IAM user keys are long-term credentials. Root credentials should never be shared. An obscure prefix on a public bucket does not protect anything."},
+{d:"sec", q:"A company runs a web application behind an Application Load Balancer. All traffic between users and the load balancer must be encrypted with HTTPS. The company wants a free certificate that renews automatically. What should a solutions architect do?",
+ o:["Request a public certificate from AWS Certificate Manager (ACM), attach it to an HTTPS listener on the ALB, and redirect HTTP to HTTPS.","Create a self-signed certificate on each EC2 instance and enable TLS on the web server.","Generate a certificate with AWS CloudHSM and upload it to the ALB every year.","Create an AWS KMS key and enable encryption on the ALB listener."], a:[0],
+ x:"Public ACM certificates are free, renew automatically, and attach directly to ALB listeners. A redirect rule sends HTTP users to HTTPS. Browsers do not trust self-signed certificates, and they would not cover traffic to the load balancer anyway. CloudHSM stores keys but does not issue public certificates. KMS keys do not provide TLS."},
+{d:"sec", q:"A financial services company must store trade records in Amazon S3 for 7 years. Regulators require that no one, including the root user, can delete or overwrite the records during that period. Which solution meets this requirement?",
+ o:["Enable S3 Object Lock in compliance mode with a 7-year retention period.","Enable S3 Object Lock in governance mode with a 7-year retention period.","Enable versioning and MFA Delete on the bucket.","Add a bucket policy that denies s3:DeleteObject to all IAM users."], a:[0],
+ x:"In compliance mode, no user, including the root user, can delete or overwrite a locked object version until its retention period ends. In governance mode, users with s3:BypassGovernanceRetention can remove the lock. MFA Delete adds a step for deletions but does not stop the root user. A bucket policy can be edited, and a deny for IAM users does not apply to the root user."},
+{d:"sec", q:"A company wants its applications in a VPC to use a SaaS provider's API, which runs in the provider's own AWS account. Traffic must stay private, and the provider's VPC CIDR overlaps with the company's VPC CIDR. Which solution should a solutions architect use?",
+ o:["Connect through AWS PrivateLink by creating an interface VPC endpoint for the provider's endpoint service.","Create a VPC peering connection between the two VPCs.","Attach both VPCs to an AWS Transit Gateway.","Have the provider expose the API through a public Network Load Balancer and allow the company's NAT gateway IP."], a:[0],
+ x:"PrivateLink exposes a single service through elastic network interfaces in your own VPC, so overlapping CIDRs do not matter and traffic stays on AWS's network. VPC peering does not allow overlapping CIDRs, and a Transit Gateway cannot route between them without extra work. A public NLB sends the traffic over the internet."},
+{d:"sec", q:"Developers need permission to create IAM roles for their Lambda functions. The security team is worried that a developer could create a role with more permissions than the developer has, such as AdministratorAccess. How can the team allow role creation while preventing privilege escalation?",
+ o:["Require developers to attach a specific permissions boundary to every role they create, enforced by a condition in the developers' IAM policy.","Attach a service control policy that denies iam:CreateRole in the account.","Allow developers to create roles, then review the roles weekly with IAM Access Analyzer.","Give developers AdministratorAccess only during business hours."], a:[0],
+ x:"A permissions boundary caps what a role can ever do. With a policy condition that requires the boundary on every new role, developers cannot create a role more powerful than the boundary. An SCP denying iam:CreateRole stops developers creating roles at all. Weekly reviews catch problems after the fact. Time-limited admin access is still admin access."},
+{d:"sec", q:"A company with 40 AWS accounts in AWS Organizations must record all API activity from every account and Region in one central S3 bucket. Auditors must be able to verify that log files have not been changed after delivery. Which solution meets these requirements with the least operational overhead?",
+ o:["Create an organization trail in AWS CloudTrail in the management account, deliver logs to a bucket in a dedicated log archive account, and enable log file integrity validation.","Create a separate trail in each account and copy the logs to a central bucket with a nightly Lambda function.","Enable AWS Config in every account and use an aggregator in the management account.","Enable VPC Flow Logs in every VPC and send them to a central bucket."], a:[0],
+ x:"An organization trail covers every account and Region automatically, including accounts added later, and log file validation produces signed digest files that prove the logs have not changed. Separate trails plus copy jobs add work and can miss new accounts. AWS Config records resource configuration, not every API call. Flow Logs record network traffic, not API activity."},
+{d:"sec", q:"A company has an unencrypted Amazon RDS for PostgreSQL DB instance in production. A new policy requires encryption at rest. What should a solutions architect do?",
+ o:["Take a snapshot, copy the snapshot with encryption enabled using a KMS key, and restore a new DB instance from the encrypted copy.","Modify the DB instance and turn on encryption at rest.","Create an encrypted read replica of the unencrypted instance and promote it.","Turn on EBS encryption by default in the Region and reboot the DB instance."], a:[0],
+ x:"You cannot turn on encryption for an existing unencrypted RDS instance. Instead, you copy a snapshot with encryption enabled and restore from that copy, then point the application at the new instance. An unencrypted instance cannot have an encrypted read replica. RDS storage is managed by AWS, so the EBS encryption-by-default setting does not apply to it."},
+
+// ---------------- Resilient (26%) ----------------
+{d:"res", q:"A company runs a production Amazon RDS for MySQL database in a single Availability Zone. The company needs the database to survive an AZ failure automatically, with no data loss for committed transactions and minimal application changes. What should a solutions architect do?",
+ o:["Convert the DB instance to a Multi-AZ deployment.","Create a read replica in the same Availability Zone.","Take automated snapshots every 5 minutes and restore them in another AZ when needed.","Change to a larger DB instance class with more memory."], a:[0],
+ x:"Multi-AZ keeps a synchronous standby in another AZ and fails over automatically. The DNS endpoint stays the same, so the application needs no changes. Read replicas use asynchronous replication and must be promoted manually. Restoring from snapshots needs manual work and loses recent data. A bigger instance is still in one AZ."},
+{d:"res", q:"An e-commerce site's web tier sends orders straight to a fleet of EC2 instances that process payments. During flash sales, the processing instances are overwhelmed and some orders are lost. What should a solutions architect do to make the system more resilient?",
+ o:["Put an Amazon SQS queue between the web tier and the processors, and scale the processing Auto Scaling group based on queue depth.","Replace the processing instances with a single larger instance type.","Publish orders to an Amazon SNS topic that the processors subscribe to over HTTP.","Add a second Application Load Balancer in front of the processing instances."], a:[0],
+ x:"SQS stores orders durably until a processor is ready, so spikes are buffered instead of dropped, and scaling on queue depth adds processors as the backlog grows. One larger instance is still a single point of failure with a fixed limit. SNS pushes messages straight away, and if subscribers are overwhelmed, deliveries are retried and eventually fail. Another load balancer adds no capacity to process orders."},
+{d:"res", q:"A banking application sends account transactions to a queue for processing. Transactions for the same account must be processed in the exact order they were sent, and no transaction can be processed twice. Which service configuration meets these requirements?",
+ o:["An Amazon SQS FIFO queue using the account ID as the message group ID","An Amazon SQS standard queue with a long visibility timeout","An Amazon SNS standard topic with an SQS subscription","An Amazon SQS standard queue with long polling enabled"], a:[0],
+ x:"FIFO queues keep messages in order within each message group and remove duplicates, giving exactly-once processing. Using the account ID as the group ID keeps each account's transactions in order. Standard queues and SNS standard topics deliver at least once, can deliver out of order, and may deliver duplicates. Long polling and visibility timeouts do not change that."},
+{d:"res", q:"A company needs a disaster recovery plan for an internal reporting application. The business accepts a recovery point objective (RPO) of 24 hours and a recovery time objective (RTO) of 24 hours. The company wants the lowest possible cost. Which DR strategy should it choose?",
+ o:["Backup and restore","Pilot light","Warm standby","Multi-site active/active"], a:[0],
+ x:"Backup and restore is the cheapest strategy. You only pay for stored backups, and a 24-hour RTO leaves plenty of time to rebuild from them. Pilot light, warm standby, and multi-site keep more resources running all the time to recover faster, which this application does not need."},
+{d:"res", q:"A global company runs a relational database for its order system. It needs cross-Region disaster recovery with an RPO of about 1 second and an RTO of about 1 minute, and the DR Region should also serve low-latency reads. Which solution meets these requirements?",
+ o:["Amazon Aurora Global Database with a secondary Region","Amazon RDS Multi-AZ deployment","Automated RDS snapshots copied to another Region every hour","Amazon DynamoDB global tables"], a:[0],
+ x:"Aurora Global Database replicates to other Regions with typical lag under a second, a secondary Region can be promoted in about a minute, and its readers serve local reads. RDS Multi-AZ protects against AZ failures within one Region only. Hourly snapshot copies give an RPO of up to an hour. DynamoDB global tables are not relational."},
+{d:"res", q:"A company's web application runs on a single EC2 instance in one Availability Zone. The company wants the application to stay available if an instance or an AZ fails, with as little change to the application as possible. What should a solutions architect do?",
+ o:["Create an Auto Scaling group with a minimum of two instances spread across at least two AZs, behind an Application Load Balancer.","Move to a larger instance type and enable detailed monitoring.","Take hourly EBS snapshots and copy them to another AZ.","Launch a second instance in the same AZ inside a cluster placement group."], a:[0],
+ x:"An Auto Scaling group across several AZs replaces failed instances, and the ALB sends traffic only to healthy instances. Losing one AZ leaves capacity running in another. A larger instance is still a single point of failure. Snapshots need manual recovery. A cluster placement group puts instances close together in one AZ, which is the opposite of what is needed."},
+{d:"res", q:"A company hosts its main website in us-east-1. If the site becomes unhealthy, users must be sent automatically to a static maintenance page hosted in an S3 bucket in us-west-2. Which Amazon Route 53 configuration should a solutions architect use?",
+ o:["Failover routing, with a health check on the primary record and the S3 website as the secondary record","Weighted routing with 100% weight on the primary and 0% on the secondary","Latency-based routing between the two Regions","Geolocation routing based on the user's country"], a:[0],
+ x:"Failover routing sends traffic to the primary while its health check passes and switches to the secondary when it fails. Weighted routing splits traffic by fixed percentages and is not built for active/passive failover. Latency-based routing picks the fastest Region, not the healthy one. Geolocation routing picks by user location."},
+{d:"res", q:"A web application runs on EC2 instances in an Auto Scaling group behind an ALB. Users are randomly logged out when the group scales in, because session data is stored in memory on each instance. What should a solutions architect do to fix this?",
+ o:["Store session data in Amazon ElastiCache for Redis (or Amazon DynamoDB) so any instance can read it.","Turn on sticky sessions on the ALB.","Store session data on each instance's instance store volume.","Increase the minimum size of the Auto Scaling group so it never scales in."], a:[0],
+ x:"Storing sessions outside the instances makes them stateless, so losing an instance loses no sessions. Sticky sessions keep sending a user to the same instance, but that session is still lost when the instance is terminated. Instance store data disappears when the instance stops or terminates. Never scaling in avoids the problem but wastes money."},
+{d:"res", q:"A company keeps critical documents in an S3 bucket in eu-west-1. It must be able to recover from accidental deletions or overwrites, and keep a copy of the data in case of a Regional outage. Which TWO actions meet these requirements?",
+ o:["Enable S3 Versioning on the bucket.","Configure S3 Cross-Region Replication to a bucket in another Region.","Enable S3 Transfer Acceleration.","Move objects to S3 Intelligent-Tiering.","Generate presigned URLs for all object access."], a:[0,1],
+ x:"Versioning keeps every version of an object, so you can restore an older version after a deletion or overwrite. Cross-Region Replication copies objects to another Region for Regional disasters, and it requires versioning on both buckets. Transfer Acceleration, Intelligent-Tiering, and presigned URLs are about speed, cost, and access, not recovery."},
+{d:"res", q:"A company runs a content management system on Linux EC2 instances in an Auto Scaling group spread across three Availability Zones. All instances must read and write the same set of files at the same time, and the storage must grow automatically. Which storage should a solutions architect choose?",
+ o:["Amazon EFS file system with mount targets in each AZ","Amazon EBS gp3 volume attached to every instance","Instance store volumes on each instance, synced with cron","Amazon FSx for Windows File Server"], a:[0],
+ x:"EFS is a managed NFS file system that many Linux instances in different AZs can mount at once, and it grows and shrinks automatically. A standard EBS volume attaches to instances in one AZ only (Multi-Attach is limited to io1/io2 in one AZ and needs a cluster-aware file system). Syncing instance store volumes is fragile, and the data is lost when instances stop. FSx for Windows uses SMB and is built for Windows workloads."},
+{d:"res", q:"An application invokes an AWS Lambda function asynchronously to process uploaded files. Some invocations fail after all retries, and those events are lost. The team needs to capture failed events so they can be inspected and reprocessed. What should a solutions architect do?",
+ o:["Configure an on-failure destination (or dead-letter queue) for the function that sends failed events to an Amazon SQS queue.","Increase the function's timeout to the maximum of 15 minutes.","Increase the function's memory to 10 GB.","Enable AWS X-Ray tracing on the function."], a:[0],
+ x:"For asynchronous invocations, Lambda can send events that fail all retries to an on-failure destination or a dead-letter queue, where you can inspect and replay them. A longer timeout or more memory might reduce some failures, but failed events would still be lost. X-Ray helps you trace requests and does not keep events."},
+{d:"res", q:"A gaming company has players in North America, Europe, and Asia. It needs a database where players in each Region can read and write their profile data with single-digit millisecond latency, and the data must stay available if a whole Region fails. Which solution meets these requirements?",
+ o:["Amazon DynamoDB global tables with replicas in each Region","Amazon RDS for MySQL with cross-Region read replicas","Amazon ElastiCache for Redis in a single Region","Amazon DynamoDB in one Region with DynamoDB Accelerator (DAX)"], a:[0],
+ x:"Global tables are multi-active: every replica Region accepts reads and writes locally, and the replicas keep in sync automatically. RDS cross-Region read replicas are read-only, so writes still go to one Region. A single-Region cache or a single-Region DynamoDB table with DAX does not survive the loss of that Region or offer local writes."},
+{d:"res", q:"A legacy application runs on one EC2 instance and cannot be put behind a load balancer. If the underlying AWS hardware fails, the instance must be recovered automatically with the same instance ID, private IP address, and EBS volumes. What should a solutions architect do?",
+ o:["Create an Amazon CloudWatch alarm on the StatusCheckFailed_System metric with the EC2 recover action.","Put the instance in an Auto Scaling group with a minimum and maximum of 1.","Create a CloudWatch alarm on StatusCheckFailed_Instance that terminates the instance.","Schedule daily EBS snapshots with Amazon Data Lifecycle Manager."], a:[0],
+ x:"The recover action moves the instance to new hardware and keeps its instance ID, private IP, Elastic IP, EBS volumes, and metadata. Many instance types also recover automatically by default. An Auto Scaling group replaces the instance with a new one that has a new ID. Terminating the instance is the opposite of recovering it. Snapshots need a manual restore."},
+{d:"res", q:"A company uses Amazon EC2 with EBS, Amazon RDS, Amazon DynamoDB, and Amazon EFS. Compliance requires daily backups kept for 35 days and copied to a second Region, managed from one place with central reporting. Which solution has the least operational overhead?",
+ o:["Create an AWS Backup backup plan with the schedule, retention, and cross-Region copy rule, and assign resources by tag.","Write Lambda functions that call each service's snapshot API, run them with EventBridge, and copy snapshots across Regions.","Use Amazon Data Lifecycle Manager for all of the services.","Enable S3 Cross-Region Replication for every service's data."], a:[0],
+ x:"AWS Backup manages backups for EC2, EBS, RDS, DynamoDB, EFS, and other services from one place, with schedules, retention, cross-Region copies, and compliance reports. Custom Lambda scripts work but you have to build and maintain them. Data Lifecycle Manager handles only EBS snapshots and EBS-backed AMIs. S3 replication only copies S3 objects."},
+{d:"res", q:"A company connects its data center to AWS with a 10 Gbps AWS Direct Connect connection. The company needs a backup path that keeps traffic encrypted if the Direct Connect link fails, and it wants to keep costs low. What should a solutions architect recommend?",
+ o:["Set up an AWS Site-to-Site VPN connection over the internet as a backup to Direct Connect.","Order a second 10 Gbps Direct Connect connection at the same location.","Use VPC peering between the data center and the VPC.","Use Amazon CloudFront to cache traffic between the data center and AWS."], a:[0],
+ x:"A Site-to-Site VPN is cheap, sets up quickly, encrypts traffic with IPsec, and can take over automatically through BGP when the Direct Connect link fails. A second Direct Connect link adds resilience but costs much more, and on its own it is not encrypted. VPC peering only connects VPCs, not on-premises networks. CloudFront is a content delivery network, not a network link."},
+{d:"res", q:"A Lambda function is triggered by events and calls a partner's API. The partner allows a maximum of 10 requests at a time and rejects anything above that. During traffic spikes, the partner rejects many requests and the work is lost. What is the MOST resilient fix?",
+ o:["Send events to an Amazon SQS queue and configure the SQS event source mapping with a maximum concurrency of 10.","Raise the function's timeout so requests wait longer for the partner.","Fan the events out to multiple Lambda functions with Amazon SNS.","Increase the account's Lambda concurrency quota."], a:[0],
+ x:"The queue holds the work durably, and maximum concurrency on the event source caps how many functions run at once, so the partner never sees more than 10 requests at a time and nothing is lost. A longer timeout does not reduce how many calls run at once. SNS fan-out and a higher quota both increase the number of calls at once, which makes the problem worse."},
+{d:"res", q:"An Auto Scaling group runs web servers behind an Application Load Balancer. Sometimes the application process freezes. The ALB marks the instance unhealthy and stops sending it traffic, but the Auto Scaling group never replaces it. How can a solutions architect make sure frozen instances are replaced automatically?",
+ o:["Turn on Elastic Load Balancing health checks for the Auto Scaling group.","Increase the health check grace period to 30 minutes.","Turn on detailed monitoring on the instances.","Add a scheduled scaling action that replaces all instances every night."], a:[0],
+ x:"By default an Auto Scaling group only uses EC2 status checks, which pass as long as the instance itself is running. With ELB health checks turned on, the group also treats instances that fail the ALB health check as unhealthy and replaces them. A longer grace period delays the checks. Detailed monitoring only collects metrics more often. Nightly replacements leave frozen instances serving errors for hours."},
+
+// ---------------- High-performing (24%) ----------------
+{d:"perf", q:"An application uses an Amazon RDS for PostgreSQL database. Every morning the analytics team runs long reporting queries that slow down the production workload. How can a solutions architect fix the slowdown with minimal changes?",
+ o:["Create an RDS read replica and point the reporting tools at the replica's endpoint.","Convert the instance to a Multi-AZ deployment and run reports on the standby.","Increase the allocated storage of the DB instance.","Move the database to Amazon DynamoDB."], a:[0],
+ x:"A read replica takes the read-only reporting queries away from the primary, so production writes and reads are no longer slowed down. In a standard Multi-AZ instance deployment, the standby cannot serve reads. More storage does not fix the competition for CPU and memory. Moving to DynamoDB is a major rewrite."},
+{d:"perf", q:"A retail application uses Amazon DynamoDB. A small set of popular product items is read millions of times per hour, and the team needs response times in microseconds with as few code changes as possible. What should a solutions architect recommend?",
+ o:["Add DynamoDB Accelerator (DAX) in front of the table.","Switch the table to on-demand capacity mode.","Create a global secondary index on the product ID.","Enable DynamoDB Streams."], a:[0],
+ x:"DAX is an in-memory cache built for DynamoDB that returns cached reads in microseconds and works with the existing DynamoDB API, so code changes are minimal. On-demand mode changes how capacity is billed, not latency. An index changes query patterns, not speed. Streams capture item changes for other consumers."},
+{d:"perf", q:"A company serves a website from EC2 instances behind an ALB in us-east-1. Users in Asia and Europe report slow page loads, mostly for images, CSS, and JavaScript files. What is the MOST effective way to improve performance for these users?",
+ o:["Put an Amazon CloudFront distribution in front of the ALB to cache static content at edge locations.","Upgrade the EC2 instances to a larger instance type.","Turn on cross-zone load balancing on the ALB.","Move the application to a Region in Europe."], a:[0],
+ x:"CloudFront caches static files at edge locations close to users, and it also speeds up dynamic requests by carrying them over the AWS backbone. Larger instances do not reduce the distance to users. Cross-zone load balancing only spreads traffic across AZs. Moving to Europe helps European users and makes things slower for everyone else."},
+{d:"perf", q:"Users around the world upload video files of 2 to 5 GB to a single S3 bucket in us-east-1. Uploads from distant countries are slow and often fail partway through. Which TWO changes will improve upload speed and reliability?",
+ o:["Enable S3 Transfer Acceleration on the bucket and use the accelerate endpoint.","Use multipart upload so files are sent in parts that can be retried individually.","Change the bucket's storage class to S3 Standard-IA.","Enable S3 Versioning on the bucket.","Put the bucket behind an Application Load Balancer."], a:[0,1],
+ x:"Transfer Acceleration sends uploads to the nearest edge location and then across the AWS backbone, which speeds up long-distance transfers. Multipart upload sends parts in parallel and only retries the parts that fail, which is recommended for files over 100 MB. Storage class and versioning do not affect upload speed. An ALB cannot sit in front of S3 like this."},
+{d:"perf", q:"A research team runs a tightly coupled high performance computing (HPC) simulation on EC2. The nodes constantly exchange data and need the lowest possible network latency and the highest throughput between them. How should the instances be placed?",
+ o:["Launch them in a cluster placement group in a single Availability Zone.","Launch them in a spread placement group across multiple Availability Zones.","Launch them in a partition placement group with one partition per node.","Launch them in separate VPCs connected by VPC peering."], a:[0],
+ x:"A cluster placement group puts instances physically close together in one AZ, giving the lowest latency and highest bandwidth between them. Adding Elastic Fabric Adapter (EFA) improves this further. Spread and partition groups separate instances to reduce shared failures, which adds latency. Separate peered VPCs add network hops."},
+{d:"perf", q:"A company wants to collect clickstream data from its website and store it in Amazon S3 in near real time, converted to Parquet format, without managing any servers or writing consumer code. Which service should a solutions architect use?",
+ o:["Amazon Data Firehose (formerly Kinesis Data Firehose)","Amazon Kinesis Data Streams with consumers on EC2","Amazon SQS with a fleet of EC2 workers","Amazon MQ"], a:[0],
+ x:"Firehose is fully managed: it takes in streaming data, batches it, can convert it to Parquet, and delivers it straight to S3 with no consumer code. Kinesis Data Streams and SQS both need you to write and run consumers. Amazon MQ is a message broker for apps that use protocols like JMS or AMQP."},
+{d:"perf", q:"A ride-sharing company streams GPS data from vehicles. Three separate applications must read the same data in real time: one for pricing, one for fraud detection, and one for archiving. The company also needs to replay the last 24 hours of data when a new version of an application is deployed. Which service meets these requirements?",
+ o:["Amazon Kinesis Data Streams","Amazon SQS standard queue","Amazon SNS standard topic","Amazon Data Firehose"], a:[0],
+ x:"Kinesis Data Streams lets several consumers read the same records on their own, keeps data for 24 hours by default (up to 365 days), and lets consumers replay from any point. With SQS, a message is deleted after it is processed, and each message goes to one consumer. SNS pushes messages and does not store them for replay. Firehose delivers data to destinations and does not offer replay to custom consumers."},
+{d:"perf", q:"A company is moving a large Oracle database to EC2. The database needs about 200,000 IOPS of consistent, durable block storage with sub-millisecond latency. Which EBS volume type should a solutions architect choose?",
+ o:["Provisioned IOPS SSD io2 Block Express","Throughput Optimized HDD (st1)","Cold HDD (sc1)","EC2 instance store"], a:[0],
+ x:"io2 Block Express supports up to 256,000 IOPS per volume with sub-millisecond latency and very high durability, which suits large critical databases. st1 and sc1 are hard-drive volumes built for sequential throughput, not random IOPS. Instance store is fast but temporary, so the data is lost when the instance stops."},
+{d:"perf", q:"A company stores several years of application logs in S3 as compressed JSON. Analysts occasionally need to run ad-hoc SQL queries on the logs. The company wants no infrastructure to manage and to pay only when queries run. Which service should a solutions architect recommend?",
+ o:["Amazon Athena","Amazon Redshift provisioned cluster","Amazon RDS for PostgreSQL with the logs loaded nightly","Amazon EMR cluster running all the time"], a:[0],
+ x:"Athena runs SQL directly against data in S3, has no servers, and charges per amount of data scanned. Converting the logs to a columnar format like Parquet and partitioning them cuts that cost further. A provisioned Redshift cluster or an always-on EMR cluster costs money even when nobody is querying. Loading logs into RDS every night adds work and storage."},
+{d:"perf", q:"A company runs a multiplayer game that uses UDP on EC2 instances in two Regions. Players need consistent low latency, the game client needs fixed IP addresses to connect to, and traffic must fail over between Regions within seconds. Which service meets these requirements?",
+ o:["AWS Global Accelerator","Amazon CloudFront","Amazon Route 53 latency-based routing","Application Load Balancer"], a:[0],
+ x:"Global Accelerator gives you two fixed anycast IP addresses, supports TCP and UDP, carries traffic over the AWS backbone, and fails over between Regions in seconds without relying on DNS caches expiring. CloudFront and ALB work with HTTP/HTTPS, not raw UDP game traffic. Route 53 failover depends on DNS record lifetimes and does not give fixed IP addresses."},
+{d:"perf", q:"A company's API runs on AWS Lambda. Every weekday at 9:00 AM traffic jumps sharply, and users see slow responses for the first few seconds because of cold starts. The company wants consistent low latency during this predictable spike. What should a solutions architect do?",
+ o:["Configure provisioned concurrency for the function, scaled up on a schedule before 9:00 AM with Application Auto Scaling.","Increase the function's timeout.","Configure reserved concurrency equal to the expected peak.","Move the function's code into a Lambda layer."], a:[0],
+ x:"Provisioned concurrency keeps execution environments initialized and ready, so requests skip the cold start. Scheduling it lowers cost outside the spike. A timeout only controls how long a function may run. Reserved concurrency guarantees capacity but does not keep environments warm. Layers are a way to package code and do not affect cold starts."},
+{d:"perf", q:"A financial trading platform needs a load balancer that can handle millions of requests per second with very low latency for TCP traffic, and it must have a static IP address in each Availability Zone so partners can allowlist it. Which load balancer should a solutions architect choose?",
+ o:["Network Load Balancer","Application Load Balancer","Classic Load Balancer","Gateway Load Balancer"], a:[0],
+ x:"Network Load Balancers work at layer 4 (TCP/UDP/TLS), handle millions of requests per second with very low latency, and give you one static IP (or an Elastic IP you choose) per AZ. ALBs work at layer 7 and do not have static IPs. Classic Load Balancers are an older generation. Gateway Load Balancers are for routing traffic through third-party security appliances."},
+{d:"perf", q:"A company needs to run complex analytical SQL queries with joins and aggregations across petabytes of structured sales data, and give dashboards fast, consistent performance. Which service is the BEST fit?",
+ o:["Amazon Redshift","Amazon RDS for MySQL","Amazon DynamoDB","Amazon ElastiCache"], a:[0],
+ x:"Redshift is a columnar data warehouse built for complex analytical queries at petabyte scale. RDS is built for transactional (OLTP) workloads. DynamoDB is a key-value store that does not do SQL joins. ElastiCache is an in-memory cache, not an analytics engine."},
+{d:"perf", q:"A social networking app needs to answer queries like 'friends of friends who like the same band' across billions of relationships, with low latency. The relational database's multi-level joins are too slow. Which database should a solutions architect recommend?",
+ o:["Amazon Neptune","Amazon Redshift","Amazon Timestream","Amazon DocumentDB"], a:[0],
+ x:"Neptune is a graph database built to follow highly connected relationships quickly, which is exactly the 'friends of friends' pattern. Redshift is for analytics, Timestream is for time-series data, and DocumentDB is for JSON documents. None of them is built for traversing relationships."},
+{d:"perf", q:"A web application runs in an Auto Scaling group. The team wants to keep average CPU use at about 50%, adding and removing instances automatically as load changes, with the least configuration effort. Which scaling policy should they use?",
+ o:["Target tracking scaling policy with a target of 50% average CPU","Simple scaling policy with separate CloudWatch alarms for scaling out and in","Scheduled scaling actions every hour","Manual scaling by changing the desired capacity"], a:[0],
+ x:"Target tracking works like a thermostat: you set the target value, and Auto Scaling creates the alarms and adjusts capacity to stay near it. Simple scaling needs you to create and tune the alarms and step sizes yourself. Scheduled scaling cannot react to unexpected load. Manual scaling is not automatic."},
+
+// ---------------- Cost-optimized (20%) ----------------
+{d:"cost", q:"A company runs a steady production workload 24/7 on m6i instances in us-east-1. It expects to keep the same instance family and Region for at least 3 years and wants the largest discount. Which purchasing option should it choose?",
+ o:["EC2 Instance Savings Plan with a 3-year term, paid all upfront","On-Demand Instances","Spot Instances","Compute Savings Plan with a 1-year term and no upfront payment"], a:[0],
+ x:"An EC2 Instance Savings Plan commits to one instance family in one Region in exchange for one of the deepest discounts, up to about 72%. A 3-year all-upfront term gives the most savings. On-Demand costs the most for steady use. Spot can be interrupted, which does not suit production. A Compute Savings Plan is more flexible, but with a 1-year, no-upfront term its discount is much smaller."},
+{d:"cost", q:"A company runs nightly image-processing batch jobs. The jobs can be stopped and restarted at any point without problems, and they can finish any time before 6:00 AM. Which EC2 purchasing option is the MOST cost-effective?",
+ o:["Spot Instances","On-Demand Instances","Dedicated Hosts","Reserved Instances with a 3-year term"], a:[0],
+ x:"Spot Instances cost up to 90% less than On-Demand. They can be interrupted, but jobs that are fault-tolerant and have flexible deadlines handle that fine. On-Demand works but costs more. Dedicated Hosts are for licensing or compliance needs. A 3-year reservation does not fit a job that only runs at night."},
+{d:"cost", q:"Users access product images in S3 heavily for the first 30 days after upload. After that, each image is viewed only a few times a month, but it must still load in milliseconds and survive the loss of an Availability Zone. Images are kept for 1 year. What is the MOST cost-effective approach?",
+ o:["Add an S3 Lifecycle rule that moves objects to S3 Standard-IA after 30 days.","Add an S3 Lifecycle rule that moves objects to S3 Glacier Deep Archive after 30 days.","Add an S3 Lifecycle rule that moves objects to S3 One Zone-IA after 30 days.","Keep all objects in S3 Standard for the full year."], a:[0],
+ x:"Standard-IA costs less to store, still loads in milliseconds, and stores data across several AZs. Glacier Deep Archive can take up to 12 hours to restore. One Zone-IA keeps data in a single AZ, so it fails the AZ-loss requirement. Keeping everything in Standard wastes money on images that are rarely viewed."},
+{d:"cost", q:"A data science team stores millions of objects in S3. Some datasets are used heavily for a few weeks, then ignored, then used heavily again. The pattern is unpredictable and changes all the time. The team wants to cut storage costs without any retrieval fees or lifecycle tuning. Which storage class should they use?",
+ o:["S3 Intelligent-Tiering","S3 Standard-IA","S3 Glacier Flexible Retrieval","S3 One Zone-IA"], a:[0],
+ x:"Intelligent-Tiering watches how each object is used and moves it between frequent and infrequent access tiers automatically, with no retrieval fees, for a small monitoring charge per object. Standard-IA and One Zone-IA charge a fee each time data is retrieved, which gets expensive when access patterns are unpredictable. Glacier Flexible Retrieval takes minutes to hours to restore."},
+{d:"cost", q:"A company must keep scanned legal documents for 10 years to meet regulations. The documents will almost never be accessed, and when they are, waiting up to 48 hours is acceptable. Which storage option has the lowest cost?",
+ o:["S3 Glacier Deep Archive","S3 Glacier Instant Retrieval","S3 Standard-IA","Amazon EBS Cold HDD (sc1) volumes"], a:[0],
+ x:"Glacier Deep Archive is the cheapest S3 storage class. Standard retrievals finish within 12 hours and bulk retrievals within 48 hours, so it fits rarely accessed archives. Glacier Instant Retrieval and Standard-IA charge for millisecond access that is not needed here. EBS volumes cost much more per GB and are not built for archives."},
+{d:"cost", q:"A company's monthly bill shows high NAT gateway data processing charges. Investigation shows that most of the traffic comes from EC2 instances in private subnets downloading large files from Amazon S3 in the same Region. How can a solutions architect reduce this cost?",
+ o:["Create a gateway VPC endpoint for S3 and add it to the private subnets' route tables.","Replace the NAT gateway with a larger NAT instance.","Move the instances to public subnets with Elastic IP addresses.","Enable S3 Transfer Acceleration on the bucket."], a:[0],
+ x:"S3 gateway endpoints are free, and traffic to S3 then skips the NAT gateway completely. A NAT instance needs maintenance and still handles all of the traffic. Moving instances into public subnets weakens security. Transfer Acceleration adds charges and still sends traffic through the NAT gateway."},
+{d:"cost", q:"A company runs development and test environments on EC2 and RDS. Developers only use them from 8 AM to 6 PM on weekdays, but the resources run 24/7. What is the MOST cost-effective change?",
+ o:["Use Amazon EventBridge Scheduler (or the Instance Scheduler on AWS solution) to stop the resources outside working hours and start them each morning.","Buy 3-year Reserved Instances for all development resources.","Move the development resources to larger instance types so tests run faster.","Run the development environments on Dedicated Hosts."], a:[0],
+ x:"The environments are used about 50 out of 168 hours a week, so stopping them outside working hours cuts their compute cost by roughly 70%. Reservations charge for every hour, so they cost more than stopping resources that sit idle most of the week. Larger instances and Dedicated Hosts increase costs."},
+{d:"cost", q:"A company has hundreds of EC2 instances and suspects many are oversized. It wants data-driven recommendations for better instance types and sizes based on actual usage history. Which service should a solutions architect use?",
+ o:["AWS Compute Optimizer","AWS CloudTrail","Amazon Inspector","AWS X-Ray"], a:[0],
+ x:"Compute Optimizer uses machine learning on CloudWatch usage history to recommend better instance types and sizes, and it also covers EBS, Lambda, and Auto Scaling groups. CloudTrail records API calls, Inspector scans for vulnerabilities, and X-Ray traces application requests."},
+{d:"cost", q:"A startup runs an internal application whose relational database is idle most of the day but gets sudden, unpredictable bursts of heavy traffic. The team wants to stop paying for idle database capacity and avoid managing capacity by hand. Which database option should a solutions architect recommend?",
+ o:["Amazon Aurora Serverless v2","Amazon RDS for MySQL on a large provisioned instance","Amazon RDS with a 3-year Reserved Instance","Amazon Redshift"], a:[0],
+ x:"Aurora Serverless v2 adjusts capacity automatically in small steps as load changes, so you pay for what you use and bursts are handled without manual work. A large provisioned instance or a reserved one charges for peak capacity all the time. Redshift is a data warehouse, not a transactional database."},
+{d:"cost", q:"A stateless web application needs at least 10 EC2 instances at all times and up to 40 during unpredictable daily peaks. Interruptions during peaks are acceptable because the Auto Scaling group replaces instances quickly. Which TWO purchasing strategies together are the MOST cost-effective?",
+ o:["Cover the 10-instance baseline with a Savings Plan or Reserved Instances.","Use Spot Instances in the Auto Scaling group for capacity above the baseline.","Run all 40 instances On-Demand at all times.","Use Dedicated Hosts for the peak capacity.","Buy Reserved Instances for all 40 instances."], a:[0,1],
+ x:"A Savings Plan or reservation gives the biggest discount on the capacity that always runs. Spot fits the extra capacity because the application is stateless and can handle interruptions. An Auto Scaling group with a mixed instances policy can combine both. Running or reserving 40 instances pays for peak capacity all day. Dedicated Hosts cost more."},
+{d:"cost", q:"A finance team wants an email alert when the company's AWS spend for the month is forecast to go over $20,000, so they can act before the bill arrives. Which solution meets this requirement with the least effort?",
+ o:["Create a cost budget in AWS Budgets with an alert based on forecasted spend.","Create an AWS CloudTrail trail and filter for billing events.","Turn on AWS Config rules for every resource type.","Check AWS Cost Explorer manually each morning."], a:[0],
+ x:"AWS Budgets can send alerts based on actual or forecasted spend, by email or through SNS. CloudTrail records API calls, not spending. Config tracks resource configuration. Checking Cost Explorer every morning is manual and easy to forget."},
+{d:"cost", q:"A company must move 80 TB of archived video from its data center to Amazon S3 within two weeks. Its internet connection is 100 Mbps and is already heavily used. What is the MOST cost-effective and timely approach?",
+ o:["Order AWS Snowball Edge devices, copy the data locally, and ship them back to AWS.","Upload the data over the existing internet connection with S3 multipart upload.","Set up a new AWS Direct Connect connection and transfer the data over it.","Use S3 Transfer Acceleration over the existing internet connection."], a:[0],
+ x:"Even with the whole 100 Mbps link (about 1 TB per day), 80 TB would take more than 2 months. Snowball Edge devices move the data by shipping, which takes days. A new Direct Connect connection can take weeks to set up and costs more for a one-time move. Transfer Acceleration cannot get past the 100 Mbps limit of the local link."},
+{d:"cost", q:"A company has hundreds of gp2 EBS volumes. Most are 1 TB or smaller and run fine at 3,000 IOPS or less. The company wants to lower storage costs without hurting performance or causing downtime. What should a solutions architect do?",
+ o:["Change the volumes to gp3 using Elastic Volumes.","Change the volumes to io2 to get guaranteed IOPS.","Change the volumes to st1 Throughput Optimized HDD.","Take snapshots and delete the volumes."], a:[0],
+ x:"gp3 costs about 20% less per GB than gp2 and includes a baseline of 3,000 IOPS and 125 MiB/s at any size. Elastic Volumes changes the volume type while it is in use, with no downtime. io2 costs more. st1 is a hard-drive volume that performs poorly for random I/O such as boot volumes and databases. Deleting the volumes would break the workloads."}
+];
+Q.forEach((q, i) => { q.id = i; });
+
+/* ---------------- state ---------------- */
+const KEY = "saa-c03-practice-v1";
+const LETTERS = "ABCDE";
+let store = loadStore();
+let view = "start";
+let ui = { mode: "full", study: false, confirmEnd: false, discardArmed: false, filter: "all", limitWarn: false, focusK: null };
+let ticker = null;
+
+function loadStore() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && typeof s === "object") return { cur: s.cur || null, hist: Array.isArray(s.hist) ? s.hist : [] };
+  } catch (e) {}
+  return { cur: null, hist: [] };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const sameSet = (x, y) => x.length === y.length && x.every(v => y.includes(v));
+function fmt(sec) { sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ":" : "") + String(m).padStart(h ? 2 : 1, "0") + ":" + String(s).padStart(2, "0"); }
+const remaining = () => store.cur ? (store.cur.end - Date.now()) / 1000 : 0;
+
+/* Pick n questions with domain counts proportional to the exam weights. */
+function pick(n) {
+  if (n >= Q.length) return shuffle(Q.map(q => q.id));
+  const quota = Object.keys(DOM).map(d => { const raw = n * DOM[d].w / 100; return { d, n: Math.floor(raw), r: raw % 1 }; });
+  let left = n - quota.reduce((s, x) => s + x.n, 0);
+  quota.slice().sort((a, b) => b.r - a.r).forEach(x => { if (left > 0) { x.n++; left--; } });
+  let ids = [];
+  quota.forEach(x => { ids = ids.concat(shuffle(Q.filter(q => q.d === x.d).map(q => q.id)).slice(0, x.n)); });
+  return shuffle(ids);
+}
+
+function startExam(modeKey, study, ids) {
+  const m = MODES[modeKey];
+  ids = ids || pick(m.n);
+  const perm = {};
+  ids.forEach(id => { perm[id] = shuffle(Q[id].o.map((_, k) => k)); });
+  const now = Date.now();
+  store.cur = { mode: modeKey, study, ids, perm, ans: {}, flag: {}, rev: {}, i: 0, start: now, end: now + m.min * 60000, done: false, result: null };
+  save();
+  ui.confirmEnd = false; ui.discardArmed = false; ui.limitWarn = false;
+  view = "exam";
+  render();
+}
+
+function finish() {
+  const a = store.cur; if (!a || a.done) return;
+  const per = Object.keys(DOM).reduce((o, d) => (o[d] = { c: 0, t: 0 }, o), {});
+  let correct = 0;
+  a.ids.forEach(id => {
+    const q = Q[id], ok = sameSet(a.ans[id] || [], q.a);
+    per[q.d].t++; if (ok) { per[q.d].c++; correct++; }
+  });
+  const n = a.ids.length;
+  const scaled = Math.round(100 + 900 * correct / n);
+  const used = Math.min((Date.now() - a.start) / 1000, MODES[a.mode].min * 60);
+  a.done = true;
+  a.result = { correct, n, scaled, pass: scaled >= PASS, per, used, at: Date.now(), timeUp: remaining() <= 0 };
+  store.hist.unshift({ at: a.result.at, mode: a.mode, study: a.study, correct, n, scaled, pass: a.result.pass });
+  store.hist = store.hist.slice(0, 12);
+  save();
+  ui.filter = "all"; ui.confirmEnd = false;
+  view = "results";
+  render();
+  window.scrollTo(0, 0);
+}
+
+/* ---------------- actions ---------------- */
+function choose(k) {
+  const a = store.cur, id = a.ids[a.i], q = Q[id];
+  if (a.study && a.rev[id]) return;
+  let sel = a.ans[id] || [];
+  const need = q.a.length;
+  ui.limitWarn = false;
+  if (need === 1) sel = [k];
+  else if (sel.includes(k)) sel = sel.filter(x => x !== k);
+  else if (sel.length < need) sel = sel.concat(k);
+  else { ui.limitWarn = true; ui.focusK = k; render(); return; }
+  a.ans[id] = sel; ui.focusK = k;
+  save(); render();
+}
+function go(i) {
+  const a = store.cur; a.i = Math.max(0, Math.min(a.ids.length - 1, i));
+  ui.limitWarn = false; ui.focusK = null;
+  save(); view = "exam"; render(); window.scrollTo(0, 0);
+}
+function toggleFlag() { const a = store.cur, id = a.ids[a.i]; a.flag[id] = !a.flag[id]; save(); render(); }
+function reveal() { const a = store.cur, id = a.ids[a.i]; a.rev[id] = true; save(); render(); }
+
+/* ---------------- views ---------------- */
+function render() {
+  const app = document.getElementById("app");
+  if (view === "exam" && store.cur && !store.cur.done) app.innerHTML = examView();
+  else if (view === "review" && store.cur && !store.cur.done) app.innerHTML = reviewView();
+  else if (view === "results" && store.cur && store.cur.done) app.innerHTML = resultsView();
+  else { view = "start"; app.innerHTML = startView(); }
+  if (ui.focusK != null) { const el = app.querySelector('.opt[data-k="' + ui.focusK + '"]'); if (el) el.focus({ preventScroll: true }); }
+  syncTicker();
+}
+
+function startView() {
+  const c = store.cur;
+  let banner = "";
+  if (c && !c.done) {
+    const left = remaining();
+    const answered = c.ids.filter(id => (c.ans[id] || []).length).length;
+    banner = `<div class="banner"><p><b>${esc(MODES[c.mode].t)} in progress.</b> ${answered} of ${c.ids.length} answered, ${fmt(left)} left on the clock. The timer keeps running while you're away.</p>
+      <div class="row"><button class="btn primary" data-act="resume">Resume exam</button>
+      <button class="btn danger${ui.discardArmed ? " armed" : ""}" data-act="discard">${ui.discardArmed ? "Click again to discard" : "Discard"}</button></div></div>`;
+  } else if (c && c.done) {
+    banner = `<div class="banner"><p>Last attempt: <b>${c.result.scaled}</b> (${c.result.pass ? "pass" : "fail"}), ${c.result.correct} of ${c.result.n} correct.</p>
+      <button class="btn" data-act="results">View score report</button></div>`;
+  }
+  const modes = Object.entries(MODES).map(([k, m]) => `<button class="mode" aria-pressed="${ui.mode === k}" data-act="mode" data-v="${k}">
+      <span class="t">${m.t}</span><span class="m">${m.n} questions · ${m.min} min</span><span class="d">${m.d}</span></button>`).join("");
+  const doms = Object.values(DOM).map(d => `<li><div>${d.name}<div class="wbar"><i style="width:${d.w / 30 * 100}%"></i></div></div><span class="pct">${d.w}%</span></li>`).join("");
+  const hist = store.hist.length ? `<section class="panel"><h2>Past attempts</h2><div class="tbl-wrap"><table>
+      <thead><tr><th>Date</th><th>Mode</th><th>Correct</th><th>Score</th><th>Result</th></tr></thead><tbody>
+      ${store.hist.map(h => `<tr><td>${new Date(h.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${new Date(h.at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</td>
+        <td>${esc(MODES[h.mode] ? MODES[h.mode].t : h.mode)}${h.study ? " (study)" : ""}</td><td class="num">${h.correct}/${h.n}</td><td class="num">${h.scaled}</td>
+        <td><span class="chip ${h.pass ? "good" : "bad"}">${h.pass ? "Pass" : "Fail"}</span></td></tr>`).join("")}
+      </tbody></table></div><p class="note">Saved in this browser only.</p></section>` : "";
+  return `<div class="wrap start">
+    <header><div class="eyebrow">AWS Certified Solutions Architect – Associate</div>
+      <h1>SAA-C03 Practice Exam</h1>
+      <p class="lede">Scenario questions written in the exam's style, with a countdown timer, flags for questions you want to revisit, a review screen, and a score report by domain at the end.</p></header>
+    ${banner}
+    <div class="facts"><div><b>65</b><span>questions</span></div><div><b>130</b><span>minutes</span></div><div><b>720</b><span>passing score</span></div><div><b>100–1000</b><span>score range</span></div></div>
+    <section><h2>Choose a length</h2><div class="modes">${modes}</div></section>
+    <label class="toggle" for="study"><input type="checkbox" id="study" ${ui.study ? "checked" : ""}>
+      <span><b>Study mode</b><small>Check each answer and read the explanation right away. Leave it off to simulate the real exam, where you only see results at the end.</small></span></label>
+    <div class="row"><button class="btn primary lg" data-act="begin">Start ${esc(MODES[ui.mode].t.toLowerCase())}</button></div>
+    <section class="panel"><h2>Domains and weights</h2><ul class="domains">${doms}</ul>
+      <p class="note">Shorter modes draw questions in these proportions. "Choose two" questions only count as correct if both picks are right, with no partial credit, the same as the real exam. The real exam includes 15 unscored questions you can't identify. This practice exam scores every question.</p>
+      <p class="note">AWS doesn't publish its scaling formula, so this page maps your percentage straight onto 100–1000. That puts 720 at about 69% correct. Treat it as an estimate.</p></section>
+    ${hist}
+    <p class="disclaimer">Unofficial practice questions written for study. Not affiliated with or endorsed by Amazon Web Services. AWS services change, so check details against current AWS documentation.</p>
+  </div>`;
+}
+
+function topBar(label) {
+  const a = store.cur, left = remaining();
+  const answered = a.ids.filter(id => (a.ans[id] || []).length).length;
+  return `<div class="bar"><div class="wrap"><div class="ttl">SAA-C03 <span>· ${label}</span></div>
+    <div class="timer${left < 600 ? " low" : ""}" id="timer" aria-label="Time remaining">${fmt(left)}</div></div>
+    <div class="prog"><i style="width:${answered / a.ids.length * 100}%"></i></div></div>`;
+}
+
+function examView() {
+  const a = store.cur, id = a.ids[a.i], q = Q[id], need = q.a.length;
+  const sel = a.ans[id] || [], revealed = a.study && a.rev[id];
+  const opts = a.perm[id].map((k, pos) => {
+    let cls = "opt " + (need > 1 ? "multi" : "single");
+    if (revealed) { if (q.a.includes(k)) cls += " is-right"; else if (sel.includes(k)) cls += " is-wrong"; }
+    return `<button class="${cls}" role="${need > 1 ? "checkbox" : "radio"}" aria-checked="${sel.includes(k)}" data-act="opt" data-k="${k}" ${revealed ? "disabled" : ""}>
+      <span class="k">${LETTERS[pos]}</span><span>${esc(q.o[k])}</span></button>`;
+  }).join("");
+  let fb = "";
+  if (revealed) {
+    const ok = sameSet(sel, q.a);
+    fb = `<div class="feedback ${ok ? "good" : "bad"}"><h3>${ok ? "Correct" : "Incorrect"}</h3><p>${esc(q.x)}</p></div>`;
+  }
+  const instr = need > 1
+    ? `<p class="instr${ui.limitWarn ? " warn" : ""}">${ui.limitWarn ? "You can only select " + need + ". Deselect one first." : "Choose " + (need === 2 ? "two" : "three") + "."}</p>`
+    : `<p class="instr">Choose one.</p>`;
+  const last = a.i === a.ids.length - 1;
+  const studyBtn = a.study && !revealed ? `<button class="btn" data-act="reveal" ${sel.length === need ? "" : "disabled"}>Check answer</button>` : "";
+  return `${topBar(MODES[a.mode].t + (a.study ? " · study" : ""))}
+  <main class="wrap exam">
+    <div class="qhead"><span class="qnum">Question ${a.i + 1} of ${a.ids.length}${a.study ? ` · <span class="chip">${DOM[q.d].short}</span>` : ""}</span>
+      <button class="flagbtn" aria-pressed="${!!a.flag[id]}" data-act="flag"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3 1h1v14H3zM5 2h8l-2 3 2 3H5z"/></svg>${a.flag[id] ? "Flagged" : "Flag for review"}</button></div>
+    <p class="stem">${esc(q.q)}</p>
+    ${instr}
+    <div class="opts" role="${need > 1 ? "group" : "radiogroup"}" aria-label="Answer options">${opts}</div>
+    ${fb}
+    <p class="kbd"><kbd>A</kbd>–<kbd>E</kbd> select · <kbd>←</kbd> <kbd>→</kbd> move · <kbd>F</kbd> flag</p>
+  </main>
+  <nav class="nav"><div class="wrap">
+    <button class="btn" data-act="prev" ${a.i === 0 ? "disabled" : ""}>Previous</button>
+    <div class="mid">${studyBtn}<button class="btn" data-act="review">Review all</button></div>
+    ${last ? `<button class="btn primary" data-act="review">Finish</button>` : `<button class="btn primary" data-act="next">Next</button>`}
+  </div></nav>`;
+}
+
+function reviewView() {
+  const a = store.cur;
+  const answered = a.ids.filter(id => (a.ans[id] || []).length === Q[id].a.length).length;
+  const partial = a.ids.filter(id => { const l = (a.ans[id] || []).length; return l > 0 && l < Q[id].a.length; }).length;
+  const flagged = a.ids.filter(id => a.flag[id]).length;
+  const unanswered = a.ids.length - answered;
+  const tiles = a.ids.map((id, i) => {
+    const full = (a.ans[id] || []).length === Q[id].a.length;
+    return `<button class="tile${full ? " ans" : ""}${a.flag[id] ? " flg" : ""}" data-act="goto" data-i="${i}" aria-label="Question ${i + 1}${full ? ", answered" : ", not answered"}${a.flag[id] ? ", flagged" : ""}">${i + 1}</button>`;
+  }).join("");
+  const confirm = ui.confirmEnd ? `<div class="confirm"><p><b>End the exam now?</b> ${unanswered ? `${unanswered} question${unanswered === 1 ? " is" : "s are"} not fully answered and will be marked wrong.` : "All questions are answered."} You can't change answers after this.</p>
+      <div class="row"><button class="btn danger armed" data-act="end">End exam and score</button><button class="btn" data-act="cancelEnd">Keep working</button></div></div>` : "";
+  return `${topBar("Review")}
+  <main class="wrap review">
+    <h2 style="margin:0">Review your answers</h2>
+    <div class="counts"><div><b>${answered}</b><span>answered</span></div><div><b>${unanswered}</b><span>not answered${partial ? ` (${partial} partly)` : ""}</span></div><div><b>${flagged}</b><span>flagged</span></div><div><b id="timer2">${fmt(remaining())}</b><span>left</span></div></div>
+    <div class="legend"><span><i class="sw ans"></i>Answered</span><span><i class="sw"></i>Not answered</span><span><i class="sw flg"></i>Flagged</span></div>
+    <div class="grid">${tiles}</div>
+    ${confirm}
+    <div class="row">
+      ${flagged ? `<button class="btn" data-act="firstFlag">Go to first flagged</button>` : ""}
+      ${unanswered ? `<button class="btn" data-act="firstOpen">Go to first unanswered</button>` : ""}
+      <button class="btn" data-act="back">Back to question ${a.i + 1}</button>
+      ${ui.confirmEnd ? "" : `<button class="btn primary" data-act="askEnd">End exam</button>`}
+    </div>
+  </main>`;
+}
+
+function resultsView() {
+  const a = store.cur, r = a.result;
+  const pos = (r.scaled - 100) / 900 * 100, cut = (PASS - 100) / 900 * 100;
+  const doms = Object.keys(DOM).filter(d => r.per[d].t).map(d => {
+    const p = r.per[d], pct = p.c / p.t * 100, ok = pct >= 70;
+    return `<div class="drow"><span class="n">${DOM[d].name}<small>${DOM[d].w}%</small></span>
+      <span class="chip ${ok ? "good" : "bad"}">${ok ? "Meets competencies" : "Needs improvement"}</span>
+      <div class="bar2"><i style="width:${pct}%;background:var(${ok ? "--good" : "--bad"})"></i><span class="mk"></span></div>
+      <span class="meta">${p.c} of ${p.t} correct · ${Math.round(pct)}%</span></div>`;
+  }).join("");
+  const items = a.ids.map((id, i) => ({ id, i, q: Q[id], sel: a.ans[id] || [], ok: sameSet(a.ans[id] || [], Q[id].a), fl: !!a.flag[id] }));
+  const wrongN = items.filter(x => !x.ok).length, flagN = items.filter(x => x.fl).length;
+  const shown = items.filter(x => ui.filter === "all" || (ui.filter === "wrong" && !x.ok) || (ui.filter === "flag" && x.fl));
+  const list = shown.length ? shown.map(x => {
+    const opts = a.perm[x.id].map((k, pos2) => {
+      const right = x.q.a.includes(k), mine = x.sel.includes(k);
+      const cls = "opt " + (x.q.a.length > 1 ? "multi" : "single") + (right ? " is-right" : mine ? " is-wrong" : "");
+      const tag = right && mine ? "Your answer · correct" : right ? "Correct answer" : mine ? "Your answer" : "";
+      return `<div class="${cls}"><span class="k">${LETTERS[pos2]}</span><span>${esc(x.q.o[k])}${tag ? `<span class="tag">${tag}</span>` : ""}</span></div>`;
+    }).join("");
+    return `<article class="ritem"><div class="top"><span class="qnum">Q${x.i + 1}</span>
+        <span class="chip ${x.ok ? "good" : "bad"}">${x.ok ? "Correct" : x.sel.length ? "Incorrect" : "Not answered"}</span>
+        <span class="chip">${DOM[x.q.d].short}</span>${x.fl ? `<span class="chip flag">Flagged</span>` : ""}${x.q.a.length > 1 ? `<span class="chip">Choose ${x.q.a.length === 2 ? "two" : "three"}</span>` : ""}</div>
+      <p class="stem">${esc(x.q.q)}</p><div class="opts">${opts}</div>
+      <div class="expl"><b>Explanation</b>${esc(x.q.x)}</div></article>`;
+  }).join("") : `<p class="empty">Nothing to show for this filter.</p>`;
+  return `<div class="wrap results">
+    <header><div class="eyebrow">Score report · ${esc(MODES[a.mode].t)}${a.study ? " · study mode" : ""}</div></header>
+    <section class="panel">
+      <div class="score"><div class="big">${r.scaled}</div>
+        <div><p class="verdict ${r.pass ? "pass" : "fail"}">${r.pass ? "Pass" : "Fail"}</p>
+          <div class="stats"><span><b>${r.correct}/${r.n}</b> correct</span><span><b>${Math.round(r.correct / r.n * 100)}%</b></span><span><b>${fmt(r.used)}</b> used${r.timeUp ? " (time ran out)" : ""}</span></div></div></div>
+      <div class="scale"><span class="fill" style="width:${pos}%;background:var(${r.pass ? "--good" : "--bad"})"></span><span class="cut" style="left:${cut}%"><span>720</span></span></div>
+      <div class="scale-ends"><span>100</span><span>1000</span></div>
+      <p class="note">Estimated score: your percentage mapped straight onto AWS's 100–1000 scale. The real exam uses its own scaling.</p>
+    </section>
+    <section class="panel"><h2>By domain</h2>${doms}
+      <p class="note">The line on each bar marks 70%. AWS's score report shows "Meets competencies" or "Needs improvement" for each domain, and this page uses 70% as a stand-in threshold.</p></section>
+    <div class="row"><button class="btn primary" data-act="retake">Retake these questions</button><button class="btn" data-act="home">New exam</button></div>
+    <section><h2>Answers and explanations</h2>
+      <div class="tabs" role="group" aria-label="Filter questions">
+        <button class="tab" aria-pressed="${ui.filter === "all"}" data-act="filter" data-v="all">All (${items.length})</button>
+        <button class="tab" aria-pressed="${ui.filter === "wrong"}" data-act="filter" data-v="wrong">Incorrect (${wrongN})</button>
+        <button class="tab" aria-pressed="${ui.filter === "flag"}" data-act="filter" data-v="flag">Flagged (${flagN})</button></div>
+    </section>
+    <div style="display:grid;gap:14px">${list}</div>
+  </div>`;
+}
+
+/* ---------------- timer ---------------- */
+function syncTicker() {
+  const live = store.cur && !store.cur.done && (view === "exam" || view === "review");
+  if (live && !ticker) ticker = setInterval(tick, 1000);
+  if (!live && ticker) { clearInterval(ticker); ticker = null; }
+}
+function tick() {
+  const left = remaining();
+  if (left <= 0) { finish(); return; }
+  const t = document.getElementById("timer"); if (t) { t.textContent = fmt(left); t.classList.toggle("low", left < 600); }
+  const t2 = document.getElementById("timer2"); if (t2) t2.textContent = fmt(left);
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
+  const act = b.dataset.act, a = store.cur;
+  if (act !== "discard") ui.discardArmed = false;
+  switch (act) {
+    case "mode": ui.mode = b.dataset.v; render(); break;
+    case "begin": startExam(ui.mode, ui.study); window.scrollTo(0, 0); break;
+    case "resume": view = "exam"; render(); window.scrollTo(0, 0); break;
+    case "discard": if (ui.discardArmed) { store.cur = null; save(); ui.discardArmed = false; } else ui.discardArmed = true; render(); break;
+    case "results": view = "results"; render(); window.scrollTo(0, 0); break;
+    case "opt": choose(+b.dataset.k); break;
+    case "flag": toggleFlag(); break;
+    case "reveal": reveal(); break;
+    case "prev": go(a.i - 1); break;
+    case "next": go(a.i + 1); break;
+    case "review": view = "review"; ui.confirmEnd = false; ui.focusK = null; render(); window.scrollTo(0, 0); break;
+    case "goto": go(+b.dataset.i); break;
+    case "back": go(a.i); break;
+    case "firstFlag": go(a.ids.findIndex(id => a.flag[id])); break;
+    case "firstOpen": go(a.ids.findIndex(id => (a.ans[id] || []).length !== Q[id].a.length)); break;
+    case "askEnd": ui.confirmEnd = true; render(); break;
+    case "cancelEnd": ui.confirmEnd = false; render(); break;
+    case "end": finish(); break;
+    case "retake": startExam(a.mode, a.study, shuffle(a.ids)); window.scrollTo(0, 0); break;
+    case "home": view = "start"; render(); window.scrollTo(0, 0); break;
+    case "filter": ui.filter = b.dataset.v; render(); break;
+  }
+});
+document.addEventListener("change", e => { if (e.target.id === "study") ui.study = e.target.checked; });
+document.addEventListener("keydown", e => {
+  if (view !== "exam" || !store.cur || store.cur.done || e.metaKey || e.ctrlKey || e.altKey) return;
+  const a = store.cur, id = a.ids[a.i], key = e.key.toLowerCase();
+  const pos = "abcde".indexOf(key) >= 0 ? "abcde".indexOf(key) : "12345".indexOf(key);
+  if (pos >= 0 && pos < a.perm[id].length) { e.preventDefault(); choose(a.perm[id][pos]); }
+  else if (e.key === "ArrowRight" && a.i < a.ids.length - 1) { e.preventDefault(); go(a.i + 1); }
+  else if (e.key === "ArrowLeft" && a.i > 0) { e.preventDefault(); go(a.i - 1); }
+  else if (key === "f") { e.preventDefault(); toggleFlag(); }
+});
+
+/* ---------------- boot ---------------- */
+function start(data) {
+  if (data && data.view) { view = data.view; Object.assign(ui, data.ui || {}); }
+  if (store.cur && !store.cur.done && remaining() <= 0) { finish(); return; }
+  render();
+}
+window.claude?.hot?.snapshot?.(() => ({ view, ui }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
