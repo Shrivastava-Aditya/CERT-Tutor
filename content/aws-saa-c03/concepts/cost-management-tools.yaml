@@ -1,0 +1,46 @@
+id: cost-management-tools
+domain: cost
+title: Cost management tools
+summary: See spending, get alerts before it overruns, right-size resources, and stop what isn't being used.
+icon: aws:cost-explorer
+
+teach: |
+  | Tool | Job |
+  |---|---|
+  | **AWS Budgets** | **Alerts** (email, SNS) when **actual or forecasted** spend or usage crosses a threshold. Budget actions can even apply an SCP or stop instances. |
+  | **Cost Explorer** | Charts and reports of past spending, forecasts, Savings Plan and RI recommendations |
+  | **Compute Optimizer** | **Right-sizing recommendations** for EC2, ASGs, EBS, Lambda and ECS, based on actual CloudWatch usage |
+  | **Cost Anomaly Detection** | Machine learning alerts on unusual spend |
+  | **Cost and Usage Report / Data Exports** | The detailed line-by-line bill, for Athena or BI tools |
+  | **Cost allocation tags** | Split costs by team, project or environment |
+  | **Trusted Advisor** | Flags idle and underused resources, among other checks |
+
+  - **Stop idle resources:** dev and test environments used only during working hours can be stopped nights and weekends with **EventBridge Scheduler** or the **Instance Scheduler on AWS** solution. About 50 of 168 hours a week in use means roughly 70% saved on compute.
+
+under_the_hood: |
+  Compute Optimizer looks at up to 14 days (or more, with enhanced metrics) of CPU, memory (if the CloudWatch agent reports it),
+  network and disk use. It compares the workload's shape against other instance types and ranks options by risk and savings.
+
+  Budgets checks your spend several times a day, and forecasted alerts use the same forecasting model as Cost Explorer.
+
+observe:
+  - text: "Create a monthly budget that alerts at 80% of a forecasted $20,000:"
+    cmd: "aws budgets create-budget --account-id 123456789012 --budget file://budget.json --notifications-with-subscribers file://notify-80-forecast.json"
+  - text: "Get right-sizing recommendations:"
+    cmd: "aws compute-optimizer get-ec2-instance-recommendations --query 'instanceRecommendations[].[instanceArn,finding,recommendationOptions[0].instanceType]'"
+  - text: "On your homelab, `htop` showing an idle 8-core box is a right-sizing finding: it's an oversized instance you happen to own."
+
+case_study: |
+  A startup's AWS bill doubled in a month without anyone noticing until the invoice. They added a monthly budget with forecast alerts
+  at 80% and 100%, turned on Cost Anomaly Detection, and applied Compute Optimizer's suggestions to 30 oversized instances. Dev
+  environments now stop at 7 PM, and the bill is back under control.
+
+other_clouds:
+  azure: "Microsoft Cost Management (budgets, analysis, anomaly alerts) and Azure Advisor"
+  gcp: "Cloud Billing budgets and alerts, Recommender (right-sizing), billing export to BigQuery"
+
+links:
+  - { title: AWS Budgets, url: "https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html" }
+  - { title: "What is AWS Compute Optimizer?", url: "https://docs.aws.amazon.com/compute-optimizer/latest/ug/what-is-compute-optimizer.html" }
+
+related: [ec2-purchasing-options, organizations-scp]

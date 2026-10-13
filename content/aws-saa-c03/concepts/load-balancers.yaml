@@ -1,0 +1,40 @@
+id: load-balancers
+domain: performance
+title: Elastic Load Balancing (ALB, NLB, GWLB)
+summary: Three load balancers for three jobs. HTTP smarts, raw TCP/UDP speed, or routing through security appliances.
+icon: aws:elb
+
+teach: |
+  | | Application LB | Network LB | Gateway LB |
+  |---|---|---|---|
+  | Layer | **7** (HTTP/HTTPS, gRPC, WebSocket) | **4** (TCP, UDP, TLS) | 3 (IP packets, GENEVE) |
+  | Routes by | **Path, host, headers, query string** | Port | Sends everything through appliances |
+  | Static IP | No (use Global Accelerator) | **Yes, one per AZ (or your Elastic IPs)** | — |
+  | Performance | Good | **Millions of requests/s, ultra-low latency** | — |
+  | Extras | Cognito/OIDC auth, WAF, Lambda targets | Preserves client IP, PrivateLink endpoint services | Third-party firewalls and IDS |
+
+  - Cues: *path-based routing, microservices, WAF* → ALB; *static IPs, extreme performance, non-HTTP* → NLB; *inspect traffic with third-party appliances* → GWLB.
+  - **Cross-zone load balancing** spreads traffic evenly across all targets in all AZs. It's on by default for ALB.
+
+under_the_hood: |
+  An ALB terminates each HTTP connection and opens new ones to targets, so it can read and route on request content. An NLB works
+  on individual connections without reading them, which is how it handles huge volumes with very little added latency, and why
+  its IPs can be fixed per AZ.
+
+observe:
+  - text: "On your homelab, nginx as a reverse proxy routing `/api` and `/app` to different backends is exactly what an ALB listener rule does."
+  - text: "See a target group's health from the load balancer's point of view:"
+    cmd: "aws elbv2 describe-target-health --target-group-arn $TG_ARN --query 'TargetHealthDescriptions[].[Target.Id,TargetHealth.State]'"
+
+case_study: |
+  A trading platform needed partners to allowlist fixed IPs and wanted the lowest possible latency for its TCP order feed. They put
+  the feed behind an NLB with an Elastic IP in each AZ, while their HTTP web portal stayed on an ALB with path-based routing and WAF.
+
+other_clouds:
+  azure: "Application Gateway (layer 7), Azure Load Balancer (layer 4), Gateway Load Balancer"
+  gcp: "External/internal Application Load Balancers (layer 7) and passthrough Network Load Balancers (layer 4)"
+
+links:
+  - { title: "What is Elastic Load Balancing?", url: "https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/what-is-load-balancing.html" }
+
+related: [auto-scaling, global-accelerator, acm-tls]

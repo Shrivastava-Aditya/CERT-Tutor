@@ -1,0 +1,41 @@
+id: elasticache
+domain: performance
+title: Amazon ElastiCache
+summary: Managed in-memory Redis-compatible (Valkey) or Memcached caches for fast reads and shared session state.
+icon: aws:elasticache
+
+teach: |
+  - **In-memory key-value store:** sub-millisecond reads for data you'd otherwise fetch from a slower database again and again.
+  - **Engines:** **Valkey / Redis OSS** (replication, Multi-AZ failover, persistence, rich data types, pub/sub) or **Memcached** (simple, multi-threaded, no replication).
+  - **Common uses:**
+    - **Database caching** in front of RDS or Aurora, so repeated expensive queries hit the cache.
+    - **Session store:** keep login sessions outside the web servers so instances become **stateless**, and scaling in no longer logs people out.
+    - Leaderboards, counters and rate limiting with Redis data structures.
+  - **Caching strategies:** *lazy loading* (fill the cache on a miss) and *write-through* (update the cache on every write). Use a **TTL** so stale data expires.
+  - Serverless option: **ElastiCache Serverless** scales capacity automatically.
+
+under_the_hood: |
+  The cache is RAM on a cluster of nodes, so reads skip disk and query planning entirely. Redis replication groups have a
+  primary and replicas across AZs, and automatic failover promotes a replica if the primary dies.
+
+  A cache never replaces the database: if the cache loses data, the app must be able to reload it from the source of truth.
+
+observe:
+  - text: "Your homelab's Linux page cache (`buff/cache` in `free -h`) does the same trick for disk: recently read data stays in RAM so the next read is instant."
+    cmd: "free -h"
+  - text: "Find a cluster's endpoint to point your app at:"
+    cmd: "aws elasticache describe-replication-groups --query 'ReplicationGroups[].[ReplicationGroupId,ConfigurationEndpoint.Address,NodeGroups[0].PrimaryEndpoint.Address]'"
+
+case_study: |
+  A web app kept sessions in each instance's memory, so users were logged out whenever Auto Scaling removed an instance. Moving
+  sessions to an ElastiCache (Valkey) cluster with Multi-AZ made the web tier stateless. Scale-in events are now invisible to
+  users, and the same cache also took 60% of the read load off the database.
+
+other_clouds:
+  azure: "Azure Managed Redis (formerly Azure Cache for Redis)"
+  gcp: "Memorystore for Valkey, Redis or Memcached"
+
+links:
+  - { title: "What is Amazon ElastiCache?", url: "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html" }
+
+related: [rds-ha, dynamodb, auto-scaling]

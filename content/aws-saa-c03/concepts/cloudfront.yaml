@@ -1,0 +1,43 @@
+id: cloudfront
+domain: performance
+title: Amazon CloudFront
+summary: A global CDN that caches content at edge locations near users and speeds up dynamic requests too.
+icon: aws:cloudfront
+
+teach: |
+  - **Edge locations** worldwide cache copies of your content close to users, so images, CSS and JS load fast everywhere.
+  - **Origins** can be S3, an ALB, EC2, API Gateway or any HTTP server. Different paths can go to different origins (`/static/*` → S3, `/api/*` → ALB).
+  - **Dynamic content benefits too:** requests travel over AWS's backbone from the nearest edge, with connections kept warm to the origin.
+  - **Security:**
+    - HTTPS with ACM certificates (**requested in us-east-1**);
+    - WAF and Shield at the edge;
+    - **origin access control** for private S3 origins;
+    - **signed URLs and cookies** for paid or private content;
+    - geo restriction.
+  - **Cache behaviour:** TTLs and cache policies decide what's cached and for how long. **Invalidations** remove content early.
+  - **CloudFront Functions / Lambda@Edge** run small bits of code at the edge (redirects, header rewrites, auth checks).
+
+under_the_hood: |
+  A user's DNS lookup for the distribution returns the IP of a nearby edge. On a cache hit, the edge answers immediately. On a
+  miss, it fetches from a Regional edge cache or the origin over the AWS network, then stores the object for the next user.
+  Origin load drops sharply because most requests never reach it.
+
+observe:
+  - text: "Check whether a response came from cache:"
+    cmd: "curl -sI https://d111111abcdef8.cloudfront.net/logo.png | grep -i -E 'x-cache|age|x-amz-cf-pop'"
+  - text: "Remove updated files from every edge right away:"
+    cmd: "aws cloudfront create-invalidation --distribution-id E1ABCDEF --paths '/css/*'"
+
+case_study: |
+  A US-hosted learning platform had slow page loads in India and Europe. Putting CloudFront in front of the ALB, with `/assets/*`
+  cached for a day and `/api/*` passed through, cut page load times by more than half abroad. Origin traffic fell by 70%, so they
+  also scaled the web tier down.
+
+other_clouds:
+  azure: "Azure Front Door (CDN with global load balancing and WAF)"
+  gcp: "Cloud CDN (with external Application Load Balancer) and Media CDN"
+
+links:
+  - { title: "What is Amazon CloudFront?", url: "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html" }
+
+related: [s3-access-control, global-accelerator, edge-protection, acm-tls]

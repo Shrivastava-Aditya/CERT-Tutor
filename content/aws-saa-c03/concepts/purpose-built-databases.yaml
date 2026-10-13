@@ -1,0 +1,45 @@
+id: purpose-built-databases
+domain: performance
+title: Purpose-built databases
+summary: Match the data shape to the database. The exam names the shape, and you name the service.
+icon: aws:neptune
+
+teach: |
+  | Data shape or need | Service |
+  |---|---|
+  | Relational, transactions (OLTP) | **RDS** or **Aurora** |
+  | Key-value at any scale, single-digit ms | **DynamoDB** |
+  | In-memory cache, sessions | **ElastiCache** |
+  | **Graph**: highly connected relationships ("friends of friends", fraud rings, recommendations) | **Neptune** |
+  | JSON documents, MongoDB-compatible | **DocumentDB** |
+  | **Time series**: metrics, IoT readings | **Timestream** |
+  | Wide-column, Cassandra-compatible | **Keyspaces** |
+  | Analytics warehouse (OLAP) | **Redshift** |
+  | Search and log analytics | **OpenSearch Service** |
+  | Immutable ledger | QLDB was retired in 2025. Use Aurora PostgreSQL with audit tables instead. |
+
+  - The trap is usually forcing a relational database to do a graph's job with many self-joins.
+
+under_the_hood: |
+  A graph database stores relationships as first-class links. Following "friend → friend → likes" walks pointers from node to
+  node instead of joining large tables again and again, so query time depends on how much of the graph you touch, not on the
+  table size. That's why deep relationship queries that time out in SQL return in milliseconds on Neptune.
+
+observe:
+  - text: "A Gremlin query on Neptune for friends of friends who like the same band:"
+    cmd: "g.V('alice').out('friend').out('friend').where(out('likes').hasId('band42')).dedup().values('name')"
+  - text: "Your homelab monitor will store readings with timestamps. That's time-series data, the shape Timestream (or Prometheus, at home) is built for."
+
+case_study: |
+  A social app's "people you may know" feature ran 6-level SQL joins and timed out as users grew. Moving the relationship data to
+  Neptune, while keeping profiles in Aurora, turned the query into a short graph walk that returns in under 50 ms.
+
+other_clouds:
+  azure: "Cosmos DB (NoSQL, MongoDB, Cassandra and Gremlin graph APIs), Azure Data Explorer for time series"
+  gcp: "Spanner Graph, Firestore, Bigtable, Memorystore, BigQuery"
+
+links:
+  - { title: "What is Amazon Neptune?", url: "https://docs.aws.amazon.com/neptune/latest/userguide/intro.html" }
+  - { title: Choosing an AWS database service, url: "https://docs.aws.amazon.com/decision-guides/latest/databases-on-aws-how-to-choose/databases-on-aws-how-to-choose.html" }
+
+related: [dynamodb, aurora, analytics-athena-redshift]

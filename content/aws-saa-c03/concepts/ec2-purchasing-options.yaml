@@ -1,0 +1,44 @@
+id: ec2-purchasing-options
+domain: cost
+title: EC2 purchasing options
+summary: On-Demand, Savings Plans, Reserved Instances, Spot and Dedicated. Match how steady and how interruptible the workload is.
+icon: aws:savings-plans
+
+teach: |
+  | Option | Commitment | Discount | Use for |
+  |---|---|---|---|
+  | **On-Demand** | None | — | Short, spiky, unpredictable work |
+  | **Compute Savings Plan** | $/hour for 1 or 3 years, **any family, Region, Fargate, Lambda** | Up to ~66% | Steady spend that may change shape |
+  | **EC2 Instance Savings Plan** | $/hour for **one family in one Region** | Up to ~72% | Steady, known instance family |
+  | **Reserved Instances** | Specific instance attributes, 1 or 3 years | Up to ~72% | Steady workloads (Savings Plans are usually preferred now) |
+  | **Spot** | None, but **AWS can reclaim with 2 minutes' notice** | Up to **~90%** | Fault-tolerant, flexible jobs: batch, CI, stateless web peaks |
+  | **Dedicated Hosts** | Physical server for you | — | Per-socket or per-core licensing, compliance |
+
+  - Longer terms and paying **all upfront** give the deepest discounts.
+  - **Common mix:** a Savings Plan for the always-on baseline, plus Spot (or On-Demand) for the peaks, in an ASG **mixed instances policy**.
+
+under_the_hood: |
+  A Savings Plan isn't attached to an instance. Every hour, AWS applies your commitment to matching usage and bills the rest at
+  On-Demand rates. Spot capacity is AWS's spare capacity: the price moves slowly with supply and demand, and when AWS needs the
+  capacity back it reclaims instances. That's why Spot workloads must checkpoint or simply be stateless.
+
+observe:
+  - text: "See the recent Spot price history for an instance type:"
+    cmd: "aws ec2 describe-spot-price-history --instance-types m7g.large --product-descriptions Linux/UNIX --max-items 5"
+  - text: "Ask Cost Explorer what Savings Plan it recommends for your usage:"
+    cmd: "aws ce get-savings-plans-purchase-recommendation --savings-plans-type COMPUTE_SP --term-in-years ONE_YEAR --payment-option NO_UPFRONT --lookback-period-in-days THIRTY_DAYS"
+
+case_study: |
+  A SaaS company always runs 10 web servers and bursts to 40 during the day. They cover the 10 with a 3-year Compute Savings Plan
+  and let the Auto Scaling group add Spot Instances across several instance types for the peaks. Their compute bill dropped about
+  55%, and Spot interruptions are invisible because the web tier is stateless.
+
+other_clouds:
+  azure: "Pay-as-you-go, Azure savings plan for compute, Reservations, Spot VMs, Dedicated Hosts"
+  gcp: "On-demand, committed use discounts, sustained use discounts, Spot VMs, sole-tenant nodes"
+
+links:
+  - { title: EC2 purchasing options, url: "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-purchasing-options.html" }
+  - { title: "What are Savings Plans?", url: "https://docs.aws.amazon.com/savingsplans/latest/userguide/what-is-savings-plans.html" }
+
+related: [auto-scaling, cost-management-tools]

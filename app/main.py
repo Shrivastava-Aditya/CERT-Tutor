@@ -26,6 +26,16 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 # Jinja2 fills HTML templates in app/templates/ with Python values
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 templates.env.globals["icon_url"] = icon_url
+
+
+def asset(path: str) -> str:
+    """/static URL with the file's modification time attached, so browsers fetch changed files instead of a cached copy."""
+    file = BASE_DIR / "static" / path
+    version = int(file.stat().st_mtime) if file.is_file() else 0
+    return f"/static/{path}?v={version}"
+
+
+templates.env.globals["asset"] = asset
 # Course text is written in Markdown (tables, bold, `code`); our own YAML, so it's trusted HTML
 templates.env.filters["md"] = lambda text: Markup(markdown.markdown(text or "", extensions=["tables", "sane_lists"]))
 

@@ -1,0 +1,39 @@
+id: s3-transfer-performance
+domain: performance
+title: Fast and reliable S3 transfers
+summary: Multipart upload for big files, Transfer Acceleration for long distances, and parallel requests for throughput.
+icon: aws:s3
+
+teach: |
+  - **Multipart upload:** split a file into parts that upload **in parallel**. A failed part is **retried on its own**.
+    - Recommended over **100 MB**, required over **5 GB** (single PUT limit). Objects can be up to 50 TB.
+    - Set a lifecycle rule to abort incomplete uploads, so leftover parts don't cost money.
+  - **S3 Transfer Acceleration:** uploads go to the **nearest CloudFront edge location**, then over AWS's backbone to the bucket. Helps most when users are **far from the bucket's Region**. Uses a special endpoint (`bucket.s3-accelerate.amazonaws.com`).
+  - **Byte-range fetches** download parts of an object in parallel.
+  - **Request rate:** at least 3,500 writes and 5,500 reads per second **per prefix**. Spread keys across prefixes for more.
+
+under_the_hood: |
+  Long-distance transfers are slow mostly because of TCP behaviour over high-latency, lossy internet paths. Transfer
+  Acceleration shortens the public internet part to just the hop to a nearby edge. Multipart upload fills the pipe with several
+  streams at once and limits the damage of a dropped connection to one part.
+
+observe:
+  - text: "The AWS CLI uses multipart automatically above a threshold. Tune it:"
+    cmd: "aws configure set default.s3.multipart_threshold 64MB && aws configure set default.s3.max_concurrent_requests 20"
+  - text: "Compare upload speed with and without acceleration:"
+    cmd: "aws s3 cp big.mp4 s3://my-bucket/ --endpoint-url https://my-bucket.s3-accelerate.amazonaws.com"
+
+case_study: |
+  A video agency's freelancers around the world upload 2–5 GB files to one bucket in us-east-1, and uploads from Asia often
+  failed at 90%. Turning on Transfer Acceleration and multipart upload in the upload tool cut upload times sharply, and a dropped
+  connection now only retries one part instead of starting the whole file again.
+
+other_clouds:
+  azure: "Block blob staged uploads (parallel blocks) and AzCopy; Front Door can accelerate uploads"
+  gcp: "Parallel composite uploads and resumable uploads with gcloud storage"
+
+links:
+  - { title: Uploading objects with multipart upload, url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html" }
+  - { title: S3 Transfer Acceleration, url: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/transfer-acceleration.html" }
+
+related: [s3-storage-classes, cloudfront, data-migration]

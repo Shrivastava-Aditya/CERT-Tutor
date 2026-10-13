@@ -1,0 +1,42 @@
+id: analytics-athena-redshift
+domain: performance
+title: Athena and Redshift
+summary: Athena queries files in S3 with no servers. Redshift is a data warehouse for heavy, repeated analytics.
+icon: aws:athena
+
+teach: |
+  | | Amazon Athena | Amazon Redshift |
+  |---|---|---|
+  | What it is | **Serverless SQL over files in S3** | **Columnar data warehouse** |
+  | Pay for | **Data scanned per query** | Provisioned nodes, or Redshift Serverless capacity |
+  | Best for | **Ad-hoc** queries, logs, occasional analysis | **Complex joins and aggregations** across huge datasets, dashboards with steady performance |
+  | Data lives | In S3 (catalogued by AWS Glue) | Loaded into Redshift (Spectrum can also query S3) |
+
+  - **Cut Athena costs:** store data in **Parquet or ORC**, **compress** it, and **partition** it (for example by date) so queries scan less.
+  - Exam cues: *occasional SQL on S3 logs, no infrastructure* → Athena; *petabytes, complex analytics, BI dashboards* → Redshift.
+  - Transactional apps (OLTP) belong in RDS, Aurora or DynamoDB, not a warehouse.
+
+under_the_hood: |
+  Columnar storage keeps each column's values together, so a query reading 3 of 50 columns only touches about 6% of the data,
+  and similar values compress very well. That's why Parquet makes Athena both cheaper and faster, and why Redshift handles
+  aggregations over billions of rows. Redshift also spreads data across nodes and runs each query in parallel on all of them.
+
+observe:
+  - text: "Run an Athena query and see how much data it scanned (you pay for that number):"
+    cmd: "aws athena get-query-execution --query-execution-id $QID --query 'QueryExecution.Statistics.DataScannedInBytes'"
+  - text: "`grep` through a huge log file reads every byte. A columnar format is like having each field in its own file, so you only read the column you ask about."
+
+case_study: |
+  A company keeps three years of compressed JSON app logs in S3. Analysts query them a few times a month, so they use Athena with
+  a Glue catalog. After converting the logs to Parquet partitioned by day, the same queries scan 90% less data. Finance dashboards
+  over billions of sales rows run on Redshift instead.
+
+other_clouds:
+  azure: "Azure Synapse Analytics and Microsoft Fabric (serverless SQL and warehouses)"
+  gcp: "BigQuery (serverless warehouse, also queries external data in Cloud Storage)"
+
+links:
+  - { title: "What is Amazon Athena?", url: "https://docs.aws.amazon.com/athena/latest/ug/what-is.html" }
+  - { title: "What is Amazon Redshift?", url: "https://docs.aws.amazon.com/redshift/latest/mgmt/welcome.html" }
+
+related: [streaming-kinesis, purpose-built-databases, s3-storage-classes]

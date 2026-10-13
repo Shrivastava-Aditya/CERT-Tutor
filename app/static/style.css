@@ -299,6 +299,7 @@ code { font: 500 .9em var(--mono); background: var(--surface-2); border: 1px sol
 .cmap-node.ghost { cursor: default; }
 .cmap-node.ghost .ring { fill: transparent; stroke: var(--new); stroke-dasharray: 3 4; }
 .cmap-node.dim { opacity: .35; }
+.cmap-col { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
 .cmap-label { font: 500 12px var(--body); fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; pointer-events: none; }
 .cmap-node.ghost .cmap-label { fill: var(--new); font-style: italic; }
 .cmap-legend .key-new { border-color: var(--dom-resilient); background: var(--surface-2); }

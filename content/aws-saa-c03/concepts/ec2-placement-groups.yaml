@@ -1,0 +1,40 @@
+id: ec2-placement-groups
+domain: performance
+title: EC2 placement groups
+summary: Control how instances sit on hardware. Packed together for speed, or spread apart for safety.
+icon: aws:ec2
+
+teach: |
+  | Strategy | Places instances | Use for |
+  |---|---|---|
+  | **Cluster** | Close together in **one AZ** | **Lowest latency, highest throughput** between nodes: tightly coupled HPC, big data jobs |
+  | **Partition** | Groups (partitions) on separate racks | Large distributed systems that know about racks: HDFS, Cassandra, Kafka |
+  | **Spread** | Each instance on **distinct hardware** (max 7 per AZ per group) | A few critical instances that must not fail together |
+
+  - Add **Elastic Fabric Adapter (EFA)** for HPC and machine learning that needs very fast node-to-node messaging (MPI, NCCL).
+  - A cluster placement group trades availability for speed, because one AZ problem affects all nodes.
+
+under_the_hood: |
+  Inside an AZ, instances can land in different racks or even different buildings. A cluster group asks EC2 to place them on
+  hosts close together on the network, cutting hops and giving full bisection bandwidth. Spread does the opposite: it puts each
+  instance on its own rack with separate power and network, so one hardware fault can't take down two.
+
+observe:
+  - text: "Create a cluster placement group and launch into it:"
+    cmd: "aws ec2 create-placement-group --group-name sim --strategy cluster && aws ec2 run-instances --placement GroupName=sim --instance-type c7gn.16xlarge --count 8 --image-id ami-0123"
+  - text: "Measure latency between two nodes, and compare a cluster group with a normal launch:"
+    cmd: "ping -c 20 10.0.1.25"
+
+case_study: |
+  A weather research team's simulation exchanges data between 64 nodes every few milliseconds, and it ran slowly on scattered
+  instances. Relaunching in a cluster placement group with EFA cut the run time by 40%. They keep checkpoints in S3 in case the
+  single AZ has problems.
+
+other_clouds:
+  azure: "Proximity placement groups and availability sets"
+  gcp: "Compact and spread placement policies"
+
+links:
+  - { title: Placement groups, url: "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" }
+
+related: [ec2-auto-recovery, auto-scaling]

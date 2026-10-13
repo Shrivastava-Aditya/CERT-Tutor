@@ -1,0 +1,302 @@
+- id: stateless-sessions-1
+  pattern: stateless-sessions
+  qualifier: none
+  stem: >-
+    A web application runs on EC2 instances in an Auto Scaling group behind an ALB. Users are randomly logged out when
+    the group scales in, because session data is stored in memory on each instance. What should a solutions architect do
+    to fix this?
+  clues: [logged out, scales in, session data]
+  options:
+    - { text: "Store session data in Amazon ElastiCache for Redis (or Amazon DynamoDB) so any instance can read it.", correct: true }
+    - { text: "Turn on sticky sessions on the ALB.", trap: sticky-sessions-fix }
+    - { text: "Store session data on each instance's instance store volume.", trap: instance-store-sessions }
+    - { text: "Increase the minimum size of the Auto Scaling group so it never scales in.", trap: never-scale-in }
+  explain: >-
+    Keeping sessions outside the instances makes them stateless, so losing one loses nothing. Sticky sessions still die
+    with the instance, instance store is temporary, and never scaling in wastes money.
+
+- id: global-static-content-1
+  pattern: global-static-content
+  qualifier: lowest-latency
+  stem: >-
+    A company serves a website from EC2 instances behind an ALB in us-east-1. Users in Asia and Europe report slow page
+    loads, mostly for images, CSS, and JavaScript files. What is the MOST effective way to improve performance for these users?
+  clues: [slow page loads, images, CSS, JavaScript]
+  options:
+    - { text: "Put an Amazon CloudFront distribution in front of the ALB to cache static content at edge locations.", correct: true }
+    - { text: "Upgrade the EC2 instances to a larger instance type.", trap: bigger-instances-for-distance }
+    - { text: "Turn on cross-zone load balancing on the ALB.", trap: cross-zone-for-latency }
+    - { text: "Move the application to a Region in Europe.", trap: move-region-for-everyone }
+  explain: >-
+    CloudFront caches static files near users and speeds up dynamic requests over the AWS backbone. The other options don't
+    shorten the distance for everyone.
+
+- id: udp-static-ip-failover-1
+  pattern: udp-static-ip-failover
+  qualifier: lowest-latency
+  stem: >-
+    A company runs a multiplayer game that uses UDP on EC2 instances in two Regions. Players need consistent low latency,
+    the game client needs fixed IP addresses to connect to, and traffic must fail over between Regions within seconds.
+    Which service meets these requirements?
+  clues: [UDP, fixed IP addresses, within seconds]
+  options:
+    - { text: "AWS Global Accelerator", correct: true }
+    - { text: "Amazon CloudFront", trap: cloudfront-for-udp }
+    - { text: "Amazon Route 53 latency-based routing", trap: dns-failover-for-static-ip }
+    - { text: "Application Load Balancer", trap: alb-for-udp }
+  explain: >-
+    Global Accelerator gives two anycast IPs, supports UDP, and fails over in seconds without waiting for DNS. CloudFront and
+    ALB are HTTP, and Route 53 depends on DNS caches.
+
+- id: faster-global-uploads-1
+  pattern: faster-global-uploads
+  choose: 2
+  qualifier: none
+  stem: >-
+    Users around the world upload video files of 2 to 5 GB to a single S3 bucket in us-east-1. Uploads from distant
+    countries are slow and often fail partway through. Which TWO changes will improve upload speed and reliability?
+  clues: [2 to 5 GB, distant countries, fail partway through]
+  options:
+    - { text: "Enable S3 Transfer Acceleration on the bucket and use the accelerate endpoint.", correct: true }
+    - { text: "Use multipart upload so files are sent in parts that can be retried individually.", correct: true }
+    - { text: "Change the bucket's storage class to S3 Standard-IA.", trap: storage-class-for-speed }
+    - { text: "Enable S3 Versioning on the bucket.", trap: versioning-for-speed }
+    - { text: "Put the bucket behind an Application Load Balancer.", trap: alb-in-front-of-s3 }
+  explain: >-
+    Transfer Acceleration uses the nearest edge plus the AWS backbone. Multipart sends parts in parallel and retries only
+    the failed part.
+
+- id: hpc-low-latency-1
+  pattern: hpc-low-latency
+  qualifier: lowest-latency
+  stem: >-
+    A research team runs a tightly coupled high performance computing (HPC) simulation on EC2. The nodes constantly
+    exchange data and need the lowest possible network latency and the highest throughput between them. How should the
+    instances be placed?
+  clues: [tightly coupled, lowest possible network latency]
+  options:
+    - { text: "Launch them in a cluster placement group in a single Availability Zone.", correct: true }
+    - { text: "Launch them in a spread placement group across multiple Availability Zones.", trap: spread-for-latency }
+    - { text: "Launch them in a partition placement group with one partition per node.", trap: partition-for-latency }
+    - { text: "Launch them in separate VPCs connected by VPC peering.", trap: separate-vpcs-for-hpc }
+  explain: >-
+    A cluster placement group packs instances close together in one AZ for the lowest latency. EFA improves it further.
+
+- id: no-code-stream-to-s3-1
+  pattern: no-code-stream-to-s3
+  qualifier: least-overhead
+  stem: >-
+    A company wants to collect clickstream data from its website and store it in Amazon S3 in near real time, converted
+    to Parquet format, without managing any servers or writing consumer code. Which service should a solutions architect use?
+  clues: [near real time, Parquet, without managing any servers]
+  options:
+    - { text: "Amazon Data Firehose (formerly Kinesis Data Firehose)", correct: true }
+    - { text: "Amazon Kinesis Data Streams with consumers on EC2", trap: streams-needs-consumers }
+    - { text: "Amazon SQS with a fleet of EC2 workers", trap: sqs-workers-to-s3 }
+    - { text: "Amazon MQ", trap: mq-for-clickstream }
+  explain: >-
+    Firehose batches, converts to Parquet, and delivers to S3 with no consumer code. The others need custom consumers or
+    are the wrong kind of service.
+
+- id: multi-consumer-replay-1
+  pattern: multi-consumer-replay
+  qualifier: none
+  stem: >-
+    A ride-sharing company streams GPS data from vehicles. Three separate applications must read the same data in real
+    time: one for pricing, one for fraud detection, and one for archiving. The company also needs to replay the last
+    24 hours of data when a new version of an application is deployed. Which service meets these requirements?
+  clues: [Three separate applications, same data, replay]
+  options:
+    - { text: "Amazon Kinesis Data Streams", correct: true }
+    - { text: "Amazon SQS standard queue", trap: sqs-single-consumer }
+    - { text: "Amazon SNS standard topic", trap: sns-no-replay }
+    - { text: "Amazon Data Firehose", trap: firehose-no-replay }
+  explain: >-
+    Kinesis Data Streams lets several consumers read the same records independently and replay from any point within retention.
+
+- id: adhoc-sql-on-s3-1
+  pattern: adhoc-sql-on-s3
+  qualifier: most-cost-effective
+  stem: >-
+    A company stores several years of application logs in S3 as compressed JSON. Analysts occasionally need to run ad-hoc
+    SQL queries on the logs. The company wants no infrastructure to manage and to pay only when queries run. Which service
+    should a solutions architect recommend?
+  clues: [ad-hoc SQL, no infrastructure, pay only when queries run]
+  options:
+    - { text: "Amazon Athena", correct: true }
+    - { text: "Amazon Redshift provisioned cluster", trap: redshift-always-on }
+    - { text: "Amazon RDS for PostgreSQL with the logs loaded nightly", trap: load-into-rds }
+    - { text: "Amazon EMR cluster running all the time", trap: emr-always-on }
+  explain: >-
+    Athena runs SQL directly on S3, with no servers, and charges per data scanned. The others cost money while idle.
+
+- id: petabyte-warehouse-1
+  pattern: petabyte-warehouse
+  qualifier: none
+  stem: >-
+    A company needs to run complex analytical SQL queries with joins and aggregations across petabytes of structured sales
+    data, and give dashboards fast, consistent performance. Which service is the BEST fit?
+  clues: [complex analytical SQL, petabytes]
+  options:
+    - { text: "Amazon Redshift", correct: true }
+    - { text: "Amazon RDS for MySQL", trap: rds-for-olap }
+    - { text: "Amazon DynamoDB", trap: dynamodb-for-joins }
+    - { text: "Amazon ElastiCache", trap: cache-for-analytics }
+  explain: >-
+    Redshift is a columnar warehouse built for analytics at petabyte scale. RDS is OLTP, DynamoDB has no joins, and ElastiCache is a cache.
+
+- id: graph-relationships-1
+  pattern: graph-relationships
+  qualifier: none
+  stem: >-
+    A social networking app needs to answer queries like friends of friends who like the same band across billions of
+    relationships, with low latency. The relational database's multi-level joins are too slow. Which database should a
+    solutions architect recommend?
+  clues: [friends of friends, relationships, multi-level joins]
+  options:
+    - { text: "Amazon Neptune", correct: true }
+    - { text: "Amazon Redshift", trap: redshift-for-graph }
+    - { text: "Amazon Timestream", trap: timestream-for-graph }
+    - { text: "Amazon DocumentDB", trap: documentdb-for-graph }
+  explain: >-
+    Neptune is a graph database built to follow connected relationships quickly.
+
+- id: tcp-static-ip-millions-1
+  pattern: tcp-static-ip-millions
+  qualifier: lowest-latency
+  stem: >-
+    A financial trading platform needs a load balancer that can handle millions of requests per second with very low
+    latency for TCP traffic, and it must have a static IP address in each Availability Zone so partners can allowlist it.
+    Which load balancer should a solutions architect choose?
+  clues: [millions of requests per second, TCP, static IP address in each Availability Zone]
+  options:
+    - { text: "Network Load Balancer", correct: true }
+    - { text: "Application Load Balancer", trap: alb-for-static-ip }
+    - { text: "Classic Load Balancer", trap: classic-lb }
+    - { text: "Gateway Load Balancer", trap: gwlb-for-apps }
+  explain: >-
+    NLBs work at layer 4, handle millions of requests per second with very low latency, and have one static IP per AZ.
+
+- id: steady-three-year-compute-1
+  pattern: steady-three-year-compute
+  qualifier: most-cost-effective
+  stem: >-
+    A company runs a steady production workload 24/7 on m6i instances in us-east-1. It expects to keep the same instance
+    family and Region for at least 3 years and wants the largest discount. Which purchasing option should it choose?
+  clues: [24/7, same instance family, 3 years, largest discount]
+  options:
+    - { text: "EC2 Instance Savings Plan with a 3-year term, paid all upfront", correct: true }
+    - { text: "On-Demand Instances", trap: on-demand-for-steady }
+    - { text: "Spot Instances", trap: spot-for-production }
+    - { text: "Compute Savings Plan with a 1-year term and no upfront payment", trap: short-flexible-plan }
+  explain: >-
+    An EC2 Instance Savings Plan trades flexibility for one of the deepest discounts, and 3 years all upfront maximizes it.
+
+- id: interruptible-batch-1
+  pattern: interruptible-batch
+  qualifier: most-cost-effective
+  stem: >-
+    A company runs nightly image-processing batch jobs. The jobs can be stopped and restarted at any point without problems,
+    and they can finish any time before 6:00 AM. Which EC2 purchasing option is the MOST cost-effective?
+  clues: [stopped and restarted, any time before]
+  options:
+    - { text: "Spot Instances", correct: true }
+    - { text: "On-Demand Instances", trap: on-demand-for-batch }
+    - { text: "Dedicated Hosts", trap: dedicated-hosts-for-batch }
+    - { text: "Reserved Instances with a 3-year term", trap: reserved-for-nightly }
+  explain: >-
+    Spot costs up to 90% less, and interruptions don't matter for restartable jobs with flexible deadlines.
+
+- id: baseline-plus-peaks-1
+  pattern: baseline-plus-peaks
+  choose: 2
+  qualifier: most-cost-effective
+  stem: >-
+    A stateless web application needs at least 10 EC2 instances at all times and up to 40 during unpredictable daily peaks.
+    Interruptions during peaks are acceptable because the Auto Scaling group replaces instances quickly. Which TWO purchasing
+    strategies together are the MOST cost-effective?
+  clues: [at least 10, up to 40, Interruptions during peaks are acceptable]
+  options:
+    - { text: "Cover the 10-instance baseline with a Savings Plan or Reserved Instances.", correct: true }
+    - { text: "Use Spot Instances in the Auto Scaling group for capacity above the baseline.", correct: true }
+    - { text: "Run all 40 instances On-Demand at all times.", trap: all-on-demand-peak }
+    - { text: "Use Dedicated Hosts for the peak capacity.", trap: dedicated-for-peaks }
+    - { text: "Buy Reserved Instances for all 40 instances.", trap: reserve-for-peak }
+  explain: >-
+    Commit only to the always-on baseline, and use Spot for interruptible peaks. A mixed instances policy combines both.
+
+- id: stop-idle-dev-1
+  pattern: stop-idle-dev
+  qualifier: most-cost-effective
+  stem: >-
+    A company runs development and test environments on EC2 and RDS. Developers only use them from 8 AM to 6 PM on weekdays,
+    but the resources run 24/7. What is the MOST cost-effective change?
+  clues: [8 AM to 6 PM on weekdays, run 24/7]
+  options:
+    - { text: "Use Amazon EventBridge Scheduler (or the Instance Scheduler on AWS solution) to stop the resources outside working hours and start them each morning.", correct: true }
+    - { text: "Buy 3-year Reserved Instances for all development resources.", trap: reserve-idle-dev }
+    - { text: "Move the development resources to larger instance types so tests run faster.", trap: bigger-dev-instances }
+    - { text: "Run the development environments on Dedicated Hosts.", trap: dedicated-for-dev }
+  explain: >-
+    About 50 of 168 hours a week are used, so stopping outside them saves roughly 70% of compute. Reservations pay for idle hours.
+
+- id: rightsizing-recommendations-1
+  pattern: rightsizing-recommendations
+  qualifier: none
+  stem: >-
+    A company has hundreds of EC2 instances and suspects many are oversized. It wants data-driven recommendations for better
+    instance types and sizes based on actual usage history. Which service should a solutions architect use?
+  clues: [oversized, recommendations, usage history]
+  options:
+    - { text: "AWS Compute Optimizer", correct: true }
+    - { text: "AWS CloudTrail", trap: cloudtrail-for-rightsizing }
+    - { text: "Amazon Inspector", trap: inspector-for-rightsizing }
+    - { text: "AWS X-Ray", trap: xray-for-rightsizing }
+  explain: >-
+    Compute Optimizer uses CloudWatch usage history to recommend better instance types and sizes.
+
+- id: forecast-spend-alert-1
+  pattern: forecast-spend-alert
+  qualifier: least-overhead
+  stem: >-
+    A finance team wants an email alert when the company's AWS spend for the month is forecast to go over $20,000, so they
+    can act before the bill arrives. Which solution meets this requirement with the least effort?
+  clues: [forecast, alert, before the bill arrives]
+  options:
+    - { text: "Create a cost budget in AWS Budgets with an alert based on forecasted spend.", correct: true }
+    - { text: "Create an AWS CloudTrail trail and filter for billing events.", trap: cloudtrail-billing-filter }
+    - { text: "Turn on AWS Config rules for every resource type.", trap: config-for-spend }
+    - { text: "Check AWS Cost Explorer manually each morning.", trap: manual-cost-explorer }
+  explain: >-
+    AWS Budgets alerts on actual or forecasted spend by email or SNS.
+
+- id: bulk-offline-transfer-1
+  pattern: bulk-offline-transfer
+  qualifier: most-cost-effective
+  stem: >-
+    A company must move 80 TB of archived video from its data center to Amazon S3 within two weeks. Its internet connection
+    is 100 Mbps and is already heavily used. What is the MOST cost-effective and timely approach?
+  clues: [80 TB, two weeks, 100 Mbps]
+  options:
+    - { text: "Order AWS Snowball Edge devices, copy the data locally, and ship them back to AWS.", correct: true }
+    - { text: "Upload the data over the existing internet connection with S3 multipart upload.", trap: multipart-over-slow-link }
+    - { text: "Set up a new AWS Direct Connect connection and transfer the data over it.", trap: new-dx-for-one-off }
+    - { text: "Use S3 Transfer Acceleration over the existing internet connection.", trap: acceleration-past-link-limit }
+  explain: >-
+    At about 1 TB per day, the link would need more than two months. Snowball moves the data by shipping in days.
+
+- id: nat-costs-to-s3-1
+  pattern: nat-costs-to-s3
+  qualifier: most-cost-effective
+  stem: >-
+    A company's monthly bill shows high NAT gateway data processing charges. Investigation shows that most of the traffic
+    comes from EC2 instances in private subnets downloading large files from Amazon S3 in the same Region. How can a
+    solutions architect reduce this cost?
+  clues: [NAT gateway data processing charges, Amazon S3]
+  options:
+    - { text: "Create a gateway VPC endpoint for S3 and add it to the private subnets' route tables.", correct: true }
+    - { text: "Replace the NAT gateway with a larger NAT instance.", trap: nat-instance-instead }
+    - { text: "Move the instances to public subnets with Elastic IP addresses.", trap: public-subnets-to-save }
+    - { text: "Enable S3 Transfer Acceleration on the bucket.", trap: acceleration-through-nat }
+  explain: >-
+    S3 gateway endpoints are free, and S3 traffic then skips the NAT gateway entirely.

@@ -58,7 +58,8 @@ def graph(course: Course, course_id: str) -> dict:
             if rel not in nodes:
                 nodes[rel] = {"id": rel, "title": rel.replace("-", " "), "domain": None, "written": False}
             links.add(tuple(sorted((c["id"], rel))))
-    return {"nodes": list(nodes.values()), "links": [{"source": a, "target": b} for a, b in sorted(links)]}
+    domains = [{"id": d["id"], "name": d["name"]} for d in course.cert.get("domains", [])]
+    return {"nodes": list(nodes.values()), "links": [{"source": a, "target": b} for a, b in sorted(links)], "domains": domains}
 
 
 def neighbours(course: Course, concept_id: str) -> tuple[dict | None, dict | None]:

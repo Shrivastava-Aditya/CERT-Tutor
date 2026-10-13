@@ -1,0 +1,44 @@
+id: global-accelerator
+domain: performance
+title: AWS Global Accelerator
+summary: Two fixed anycast IPs that carry TCP and UDP traffic over AWS's network and fail over between Regions in seconds.
+icon: aws:global-accelerator
+
+teach: |
+  - Gives you **two static anycast IP addresses** that never change. Clients and firewalls can allowlist them.
+  - Users connect to the nearest edge location, then ride the **AWS backbone** to the best healthy endpoint (ALB, NLB, EC2, Elastic IP).
+  - Works for **TCP and UDP**: games, VoIP, IoT, not just HTTP.
+  - **Fast Regional failover** (seconds), based on health checks, with **no DNS caching delay**.
+  - **Traffic dials** and endpoint weights shift traffic between Regions, for example for blue/green releases.
+
+  | | Global Accelerator | CloudFront |
+  |---|---|---|
+  | Caches content | No | **Yes** |
+  | Protocols | TCP, UDP | HTTP(S), WebSocket |
+  | Static IPs | **Yes, 2 anycast** | No |
+  | Best for | Non-HTTP, static IPs, fast failover | Web content, caching |
+
+under_the_hood: |
+  Anycast means the same IP address is announced from many edge locations, and the internet's routing delivers each user to
+  the closest one. From there, traffic stays on AWS's network. Failover happens inside AWS's network, so clients keep the same
+  IP and don't wait for DNS TTLs to expire, the way they would with Route 53 failover.
+
+observe:
+  - text: "List an accelerator's static IPs:"
+    cmd: "aws globalaccelerator list-accelerators --region us-west-2 --query 'Accelerators[].IpSets[].IpAddresses'"
+  - text: "Run `mtr` against an accelerator IP from two locations: the first hops differ, but both enter AWS's network early."
+    cmd: "mtr -rwc 10 75.2.60.5"
+
+case_study: |
+  A multiplayer game running UDP servers in two Regions needed fixed IPs for its console clients and quick recovery from a
+  Regional outage. With Global Accelerator, players connect to two anycast IPs, latency jitter dropped, and a Region failure in
+  testing moved players over in under 30 seconds without a client update.
+
+other_clouds:
+  azure: "Azure cross-region Load Balancer (global anycast IP)"
+  gcp: "Global external passthrough / proxy load balancers with a single anycast IP"
+
+links:
+  - { title: "What is AWS Global Accelerator?", url: "https://docs.aws.amazon.com/global-accelerator/latest/dg/what-is-global-accelerator.html" }
+
+related: [cloudfront, route53-routing, load-balancers]

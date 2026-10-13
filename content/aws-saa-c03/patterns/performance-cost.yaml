@@ -1,0 +1,172 @@
+# Patterns for the High-performing (24%) and Cost-optimized (20%) domains
+
+- id: stateless-sessions
+  concept: elasticache
+  clues: [logged out, scales in, session data]
+  rule: "Sessions lost when instances go away → keep sessions in ElastiCache (or DynamoDB) so the web tier is stateless"
+  traps:
+    - { id: sticky-sessions-fix, option: Sticky sessions, why: "Still loses the session when that instance is terminated." }
+    - { id: instance-store-sessions, option: Instance store, why: "Disappears when the instance stops or terminates." }
+    - { id: never-scale-in, option: Never scale in, why: "Avoids the symptom and wastes money." }
+
+- id: global-static-content
+  concept: cloudfront
+  clues: [slow page loads, images, CSS, JavaScript]
+  rule: "Distant users, slow static assets → CloudFront in front of the origin"
+  traps:
+    - { id: bigger-instances-for-distance, option: Larger instances, why: "Doesn't shorten the distance to users." }
+    - { id: cross-zone-for-latency, option: Cross-zone load balancing, why: "Spreads traffic across AZs. Users are just as far away." }
+    - { id: move-region-for-everyone, option: Move to another Region, why: "Helps one region's users and hurts the rest." }
+
+- id: udp-static-ip-failover
+  concept: global-accelerator
+  clues: [UDP, fixed IP addresses, within seconds]
+  rule: "Non-HTTP (TCP/UDP), static IPs, fast multi-Region failover → Global Accelerator"
+  traps:
+    - { id: cloudfront-for-udp, option: CloudFront, why: "HTTP(S) only, and no static IPs." }
+    - { id: dns-failover-for-static-ip, option: Route 53 latency/failover routing, why: "Depends on DNS caches expiring, and gives no fixed IPs." }
+    - { id: alb-for-udp, option: Application Load Balancer, why: "Layer 7 HTTP. It doesn't carry UDP game traffic." }
+
+- id: faster-global-uploads
+  concept: s3-transfer-performance
+  clues: [2 to 5 GB, distant countries, fail partway through]
+  rule: "Big uploads from far away, failing midway → S3 Transfer Acceleration + multipart upload"
+  traps:
+    - { id: storage-class-for-speed, option: Change the storage class, why: "Storage class affects cost, not upload speed." }
+    - { id: versioning-for-speed, option: Enable versioning, why: "Protects versions. No effect on speed." }
+    - { id: alb-in-front-of-s3, option: Put S3 behind an ALB, why: "Not how S3 uploads work, and it adds nothing." }
+
+- id: hpc-low-latency
+  concept: ec2-placement-groups
+  clues: [tightly coupled, lowest possible network latency]
+  rule: "Tightly coupled nodes needing the lowest latency → cluster placement group (+ EFA)"
+  traps:
+    - { id: spread-for-latency, option: Spread placement group, why: "Separates instances onto distinct hardware, which adds latency." }
+    - { id: partition-for-latency, option: Partition placement group, why: "Built for rack-aware fault isolation, not minimum latency." }
+    - { id: separate-vpcs-for-hpc, option: Separate peered VPCs, why: "Adds network hops." }
+
+- id: no-code-stream-to-s3
+  concept: streaming-kinesis
+  clues: [near real time, Parquet, without managing any servers]
+  rule: "Stream into S3 (with format conversion), no consumer code → Amazon Data Firehose"
+  traps:
+    - { id: streams-needs-consumers, option: Kinesis Data Streams + EC2 consumers, why: "You write and run the consumers." }
+    - { id: sqs-workers-to-s3, option: SQS + EC2 workers, why: "Custom code and servers to manage." }
+    - { id: mq-for-clickstream, option: Amazon MQ, why: "A message broker for JMS/AMQP apps, not a delivery pipeline." }
+
+- id: multi-consumer-replay
+  concept: streaming-kinesis
+  clues: [Three separate applications, same data, replay]
+  rule: "Several independent real-time consumers plus replay → Kinesis Data Streams"
+  traps:
+    - { id: sqs-single-consumer, option: SQS standard queue, why: "Messages go to one consumer and are deleted after processing, so there's no replay." }
+    - { id: sns-no-replay, option: SNS standard topic, why: "Pushes messages without keeping them for replay." }
+    - { id: firehose-no-replay, option: Amazon Data Firehose, why: "Delivers to destinations and offers no replay to custom consumers." }
+
+- id: adhoc-sql-on-s3
+  concept: analytics-athena-redshift
+  clues: [ad-hoc SQL, no infrastructure, pay only when queries run]
+  rule: "Occasional SQL over files in S3, serverless, pay per query → Athena"
+  traps:
+    - { id: redshift-always-on, option: Provisioned Redshift cluster, why: "Costs money even when nobody is querying." }
+    - { id: load-into-rds, option: Load logs into RDS nightly, why: "Extra pipeline, storage and an always-on database." }
+    - { id: emr-always-on, option: Always-on EMR cluster, why: "Pays for idle compute." }
+
+- id: petabyte-warehouse
+  concept: analytics-athena-redshift
+  clues: [complex analytical SQL, petabytes]
+  rule: "Complex analytics across petabytes with steady dashboard performance → Redshift"
+  traps:
+    - { id: rds-for-olap, option: RDS for MySQL, why: "Built for transactions (OLTP), not petabyte analytics." }
+    - { id: dynamodb-for-joins, option: DynamoDB, why: "Key-value, with no SQL joins." }
+    - { id: cache-for-analytics, option: ElastiCache, why: "A cache, not an analytics engine." }
+
+- id: graph-relationships
+  concept: purpose-built-databases
+  clues: [friends of friends, relationships, multi-level joins]
+  rule: "Deep relationship queries → graph database (Neptune)"
+  traps:
+    - { id: redshift-for-graph, option: Amazon Redshift, why: "An analytics warehouse, not a graph engine." }
+    - { id: timestream-for-graph, option: Amazon Timestream, why: "Built for time-series data." }
+    - { id: documentdb-for-graph, option: Amazon DocumentDB, why: "JSON documents, not relationship traversal." }
+
+- id: tcp-static-ip-millions
+  concept: load-balancers
+  clues: [millions of requests per second, TCP, static IP address in each Availability Zone]
+  rule: "Extreme TCP/UDP performance with static IPs per AZ → Network Load Balancer"
+  traps:
+    - { id: alb-for-static-ip, option: Application Load Balancer, why: "Layer 7, with no static IPs." }
+    - { id: classic-lb, option: Classic Load Balancer, why: "Previous generation." }
+    - { id: gwlb-for-apps, option: Gateway Load Balancer, why: "For routing traffic through security appliances." }
+
+- id: steady-three-year-compute
+  concept: ec2-purchasing-options
+  clues: [24/7, same instance family, 3 years, largest discount]
+  rule: "Steady usage, fixed family and Region, long term → EC2 Instance Savings Plan, 3 years, all upfront"
+  traps:
+    - { id: on-demand-for-steady, option: On-Demand, why: "The most expensive option for steady use." }
+    - { id: spot-for-production, option: Spot Instances, why: "Can be interrupted, which doesn't suit steady production." }
+    - { id: short-flexible-plan, option: 1-year no-upfront Compute Savings Plan, why: "More flexible, but a much smaller discount." }
+
+- id: interruptible-batch
+  concept: ec2-purchasing-options
+  clues: [stopped and restarted, any time before]
+  rule: "Fault-tolerant, flexible batch work → Spot Instances"
+  traps:
+    - { id: on-demand-for-batch, option: On-Demand, why: "Works, but costs far more." }
+    - { id: dedicated-hosts-for-batch, option: Dedicated Hosts, why: "For licensing and compliance needs, and expensive." }
+    - { id: reserved-for-nightly, option: 3-year Reserved Instances, why: "Pays for 24 hours a day for a job that runs at night." }
+
+- id: baseline-plus-peaks
+  concept: ec2-purchasing-options
+  clues: [at least 10, up to 40, Interruptions during peaks are acceptable]
+  rule: "Steady baseline + interruptible peaks → Savings Plan / RIs for the baseline + Spot for the peaks"
+  traps:
+    - { id: all-on-demand-peak, option: 40 On-Demand all the time, why: "Pays for peak capacity all day at the highest rate." }
+    - { id: dedicated-for-peaks, option: Dedicated Hosts for peaks, why: "The most expensive choice for burst capacity." }
+    - { id: reserve-for-peak, option: Reserve all 40, why: "Commits to capacity that's idle most of the day." }
+
+- id: stop-idle-dev
+  concept: cost-management-tools
+  clues: [8 AM to 6 PM on weekdays, run 24/7]
+  rule: "Resources only used in working hours → schedule them to stop outside those hours"
+  traps:
+    - { id: reserve-idle-dev, option: Reserved Instances for dev, why: "Pays for every hour, idle or not." }
+    - { id: bigger-dev-instances, option: Larger instance types, why: "Costs more." }
+    - { id: dedicated-for-dev, option: Dedicated Hosts, why: "Costs more." }
+
+- id: rightsizing-recommendations
+  concept: cost-management-tools
+  clues: [oversized, recommendations, usage history]
+  rule: "Data-driven right-sizing → Compute Optimizer"
+  traps:
+    - { id: cloudtrail-for-rightsizing, option: AWS CloudTrail, why: "Records API calls, not utilization." }
+    - { id: inspector-for-rightsizing, option: Amazon Inspector, why: "Scans for vulnerabilities." }
+    - { id: xray-for-rightsizing, option: AWS X-Ray, why: "Traces application requests." }
+
+- id: forecast-spend-alert
+  concept: cost-management-tools
+  clues: [forecast, alert, before the bill arrives]
+  rule: "Alert on forecasted spend → AWS Budgets"
+  traps:
+    - { id: cloudtrail-billing-filter, option: CloudTrail billing events, why: "Records API calls, not spending." }
+    - { id: config-for-spend, option: AWS Config rules, why: "Tracks configuration, not money." }
+    - { id: manual-cost-explorer, option: Check Cost Explorer daily, why: "Manual and easy to forget." }
+
+- id: bulk-offline-transfer
+  concept: data-migration
+  clues: [80 TB, two weeks, 100 Mbps]
+  rule: "Lots of data, slow link, tight deadline → Snowball Edge (do the bandwidth math)"
+  traps:
+    - { id: multipart-over-slow-link, option: Multipart upload over the link, why: "At about 1 TB per day, 80 TB takes more than 2 months." }
+    - { id: new-dx-for-one-off, option: New Direct Connect, why: "Weeks to set up, and costly for a one-time move." }
+    - { id: acceleration-past-link-limit, option: Transfer Acceleration, why: "Can't beat the 100 Mbps local link." }
+
+- id: nat-costs-to-s3
+  concept: vpc-endpoints
+  clues: [NAT gateway data processing charges, Amazon S3]
+  rule: "NAT gateway charges from S3 traffic → S3 gateway endpoint (free)"
+  traps:
+    - { id: nat-instance-instead, option: Larger NAT instance, why: "Still handles every byte, and now you maintain it." }
+    - { id: public-subnets-to-save, option: Move instances to public subnets, why: "Weakens security to save money." }
+    - { id: acceleration-through-nat, option: S3 Transfer Acceleration, why: "Adds charges and still goes through the NAT gateway." }

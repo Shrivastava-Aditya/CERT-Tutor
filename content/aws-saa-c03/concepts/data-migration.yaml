@@ -1,0 +1,41 @@
+id: data-migration
+domain: cost
+title: Moving data into AWS
+summary: Online transfer with DataSync or the internet, or offline transfer by shipping a Snowball device. The bandwidth math decides.
+icon: aws:snowball
+
+teach: |
+  - **First do the math:** 100 Mbps fully used moves about **1 TB per day**, and 1 Gbps about 10 TB per day. Real links are slower and shared.
+  - **AWS Snowball Edge:** a rugged storage device shipped to you. Copy data locally, ship it back, and AWS loads it into S3.
+    - About 80 TB usable per storage-optimized device. Order several in parallel for more.
+    - Days door to door, not limited by your internet link.
+  - **AWS DataSync:** online transfer agent for NFS, SMB, HDFS and object storage to S3, EFS or FSx. Handles scheduling, checksums and incremental syncs.
+  - **AWS Transfer Family:** managed SFTP, FTPS and FTP endpoints in front of S3 or EFS, for partners who only speak those protocols.
+  - **Storage Gateway:** hybrid access. On-premises apps keep using NFS, SMB or iSCSI while data lands in AWS.
+  - **Direct Connect:** a lasting private link, but it takes weeks to set up and doesn't suit a one-off move.
+
+under_the_hood: |
+  With a slow link, shipping disks has more bandwidth than the network. 80 TB over 100 Mbps takes more than two months. On a truck
+  it takes a few days. Snowball devices encrypt data with KMS keys, so the device in transit holds nothing readable, and AWS wipes
+  it to NIST standards after the import.
+
+observe:
+  - text: "The bandwidth math in your shell: days to move 80 TB at 100 Mbps:"
+    cmd: "python3 -c 'print(80e12*8 / 100e6 / 86400, \"days\")'"
+  - text: "On your homelab, copying 298 GB onto the Ultra Touch with `rsync` and carrying it somewhere is the same trick Snowball uses at petabyte scale."
+    cmd: "rsync -a --info=progress2 /data/ /mnt/ultratouch/data/"
+
+case_study: |
+  A broadcaster had 80 TB of archive video to move to S3 within two weeks, over a 100 Mbps link already busy with daily work.
+  The math said more than two months online. They ordered Snowball Edge devices, copied the archive locally over a weekend, and
+  shipped them back. The data was in S3 nine days later, and DataSync handled the small daily changes afterwards.
+
+other_clouds:
+  azure: "Azure Data Box (offline) and AzCopy / Storage Mover (online)"
+  gcp: "Transfer Appliance (offline) and Storage Transfer Service (online)"
+
+links:
+  - { title: "What is AWS Snowball Edge?", url: "https://docs.aws.amazon.com/snowball/latest/developer-guide/whatisedge.html" }
+  - { title: "What is AWS DataSync?", url: "https://docs.aws.amazon.com/datasync/latest/userguide/what-is-datasync.html" }
+
+related: [hybrid-connectivity, s3-transfer-performance]

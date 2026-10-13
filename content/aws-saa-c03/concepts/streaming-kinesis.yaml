@@ -1,0 +1,45 @@
+id: streaming-kinesis
+domain: performance
+title: Kinesis Data Streams and Amazon Data Firehose
+summary: Streams for custom real-time consumers that can replay. Firehose for no-code delivery to S3 and other destinations.
+icon: aws:kinesis-streams
+
+teach: |
+  | | Kinesis Data Streams | Amazon Data Firehose |
+  |---|---|---|
+  | You write consumers? | **Yes** (Lambda, KCL apps, Flink) | **No**, fully managed delivery |
+  | Multiple independent consumers | **Yes** (enhanced fan-out) | One delivery destination per stream |
+  | Replay | **Yes**: keeps 24 hours by default, up to 365 days | No |
+  | Latency | Real time (~200 ms) | Near real time (buffers by size or time) |
+  | Destinations | Whatever your code does | S3, Redshift, OpenSearch, Splunk, HTTP and more |
+  | Transform | In your consumer | Built-in Lambda transform, **Parquet/ORC conversion** |
+
+  - **Ordering** is kept per **partition key** (shard).
+  - Compare with **SQS**: once a message is processed it's deleted, and one consumer gets each message. Streams keep records so many consumers can read them.
+
+under_the_hood: |
+  A stream is split into shards, and each record's partition key decides its shard. Records stay in the shard until retention
+  expires, whether read or not. Each consumer tracks its own position, which is how several apps read the same data at their own
+  pace and how you replay by moving a position back.
+
+  Firehose collects records into batches (for example, 5 MB or 60 seconds) and writes each batch as one file, which suits S3 and data lakes.
+
+observe:
+  - text: "Put a test record and read it back:"
+    cmd: "aws kinesis put-record --stream-name clicks --partition-key user42 --data $(echo -n '{\"page\":\"/home\"}' | base64)"
+  - text: "Your homelab monitor's agent → collector flow is a tiny stream. If several tools (a dashboard, an alerting job, an archive) all needed the same readings, you'd want Kinesis-style fan-out."
+
+case_study: |
+  A ride-sharing company streams GPS updates into Kinesis Data Streams. Pricing, fraud detection and archiving each read the stream
+  on their own, and after a bad fraud-model release they replayed the last 6 hours through the fixed version. A separate Firehose
+  stream turns website clicks into Parquet files in S3 for Athena, with no code at all.
+
+other_clouds:
+  azure: "Azure Event Hubs (streams, Capture to storage); Stream Analytics"
+  gcp: "Pub/Sub (with BigQuery and Cloud Storage subscriptions), Managed Service for Apache Kafka, Dataflow"
+
+links:
+  - { title: "What is Amazon Kinesis Data Streams?", url: "https://docs.aws.amazon.com/streams/latest/dev/introduction.html" }
+  - { title: "What is Amazon Data Firehose?", url: "https://docs.aws.amazon.com/firehose/latest/dev/what-is-this-service.html" }
+
+related: [sqs-decoupling, analytics-athena-redshift, lambda-resilience]
