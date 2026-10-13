@@ -28,9 +28,53 @@
     </label>
     <div class="start-row">
       <button class="btn primary" type="submit">Start</button>
-      <span class="note">Question bank: {{ pool_size }} questions{% if pool_size < 65 %}. A full exam uses all of them until AI-generated questions arrive{% endif %}.</span>
+      <span class="note">Question pool: {{ pool_size }} questions ({{ ai.counts.ready }} AI-generated). Exams prefer questions you haven't seen yet.</span>
     </div>
   </form>
+
+  <section class="panel ai-panel" id="ai">
+    <div class="panel-head">
+      <h2>AI question generator</h2>
+      <span class="ai-model">{{ ai.model }}</span>
+    </div>
+    {% if not ai.available %}
+    <p class="note">Add <code>ANTHROPIC_API_KEY</code> to <code>.env</code> and restart the app to turn this on.</p>
+    {% else %}
+    <p class="note">Writes fresh questions from the exam patterns, aimed at the ones you miss most. Every question passes the same checks as the hand-written bank before it reaches an exam. It also runs automatically after each attempt for the patterns you got wrong.</p>
+    <div class="ai-stats">
+      <div><b data-ai="ready">{{ ai.counts.ready }}</b><span>AI questions ready</span></div>
+      <div><b>{{ ai.counts.rejected }}</b><span>rejected by the validator</span></div>
+      <div><b>{{ ai.counts.today }}/{{ ai.daily_limit }}</b><span>generated today</span></div>
+    </div>
+    <div class="row">
+      <form method="post" action="/practice/{{ course_id }}/generate">
+        <button class="btn primary" type="submit" {% if ai.running %}disabled{% endif %}>
+          {% if ai.running %}<span class="spinner" aria-hidden="true"></span> Generating…{% else %}Generate fresh questions{% endif %}
+        </button>
+      </form>
+      <span class="note" id="ai-live" aria-live="polite">{% if ai.running %}Writing questions for your weak spots. This page updates when it's done.{% endif %}</span>
+    </div>
+    {% if ai.jobs %}
+    <details class="ai-jobs">
+      <summary>Recent runs</summary>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>When</th><th>Why</th><th>Made</th><th>Rejected</th><th>Tokens in/out</th><th>Cost</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for j in ai.jobs %}
+          <tr>
+            <td>{{ fmt_time(j.started_at) }}</td><td>{{ j.reason }}</td>
+            <td class="num">{{ j.made }}</td><td class="num">{{ j.rejected }}</td>
+            <td class="num">{{ j.input_tokens }}/{{ j.output_tokens }}</td>
+            <td class="num">${{ "%.3f" | format(j.cost) }}</td>
+            <td>{{ j.status }}{% if j.error %} <span class="error" title="{{ j.error }}">⚠</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </details>
+    {% endif %}
+    {% endif %}
+  </section>
 
   {% if analysis.total %}
   <section class="panel">
@@ -71,4 +115,23 @@
   </section>
   {% endif %}
 </main>
+{% endblock %}
+{% block scripts %}
+{% if ai.running %}
+<script>
+  // While a generation job runs, check every 5 seconds and reload the page when it finishes
+  (function poll() {
+    setTimeout(async () => {
+      try {
+        const res = await fetch("/practice/{{ course_id }}/gen-status");
+        const s = await res.json();
+        document.querySelector('[data-ai="ready"]').textContent = s.ready;
+        document.getElementById("ai-live").textContent = `Writing… ${s.made} made so far.`;
+        if (!s.running) { location.reload(); return; }
+      } catch (e) { /* try again next round */ }
+      poll();
+    }, 5000);
+  })();
+</script>
+{% endif %}
 {% endblock %}

@@ -2,11 +2,11 @@
 import secrets
 import time
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from app import db, insights, questions
+from app import db, generator, insights, questions
 from app.web import course_or_error_page, provider_logo, render
 
 router = APIRouter()
@@ -19,14 +19,26 @@ def practice_home(request: Request, course_id: str):
     if error:
         return error
     analysis = insights.analyse(course, db.course_answers(course_id))
+    jobs = db.recent_jobs(course_id)
+    for j in jobs:
+        j["cost"] = generator.estimate_cost(j["input_tokens"], j["output_tokens"])
+    ai = {
+        "available": generator.available(),
+        "model": generator.MODEL,
+        "counts": db.generated_counts(course_id),
+        "running": db.running_job(course_id),
+        "jobs": jobs,
+        "daily_limit": generator.DAILY_LIMIT,
+    }
     return render(request, "practice.html", {
+        "ai": ai,
         "title": f"Practice · {course.cert['code']}",
         "page": "practice",
         "course_id": course_id,
         "cert": course.cert,
         "logo": provider_logo(course),
         "modes": questions.MODES,
-        "pool_size": len(questions.pool(course)),
+        "pool_size": len(questions.pool(course, generated=db.ready_generated(course_id))),
         "attempts": db.recent_attempts(course_id),
         "analysis": analysis,
         "fmt_time": db.fmt_time,
@@ -39,16 +51,20 @@ def start_attempt(request: Request, course_id: str, mode: str = Form("full"), st
     course, error = course_or_error_page(request, course_id)
     if error:
         return error
+    generated = db.ready_generated(course_id)
+    seen = db.times_seen(course_id)
     if concept:
         if concept not in course.concepts:
             raise HTTPException(status_code=404, detail="No such concept")
-        chosen = questions.pool(course, concept)
-        mode, minutes, study = "drill", None, True       # a concept drill: untimed, answers shown as you go
+        # A concept drill: untimed, answers shown as you go, freshest 10 questions first
+        candidates = questions.pool(course, concept, generated)
+        chosen = sorted(candidates, key=lambda q: (seen.get(q["id"], 0), secrets.randbelow(1000)))[:10]
+        mode, minutes, study = "drill", None, True
     else:
         if mode not in questions.MODES:
             raise HTTPException(status_code=400, detail="Unknown mode")
         n, minutes, _ = questions.MODES[mode]
-        chosen = questions.pick(course, questions.pool(course), n)
+        chosen = questions.pick(course, questions.pool(course, generated=generated), n, seen=seen)
     attempt_id = secrets.token_urlsafe(8)
     db.create_attempt(attempt_id, course_id, mode, study, concept or None, questions.shuffled(chosen), minutes)
     # 303 = "see other": the browser follows with a GET, so refreshing doesn't start another attempt
@@ -94,7 +110,7 @@ class Submission(BaseModel):
 
 
 @router.post("/attempt/{attempt_id}/submit")
-def submit_attempt(attempt_id: str, sub: Submission):
+def submit_attempt(attempt_id: str, sub: Submission, background: BackgroundTasks):
     attempt = load_attempt(attempt_id)
     done = {"redirect": f"/attempt/{attempt_id}/results"}
     if attempt["finished_at"]:
@@ -116,7 +132,45 @@ def submit_attempt(attempt_id: str, sub: Submission):
         })
     total = len(attempt["questions"])
     db.finish_attempt(attempt_id, rows, correct, total, questions.scaled_score(correct, total))
+    # Close the loop: write fresh questions for the patterns you just missed, in the background
+    missed = list(dict.fromkeys(r["pattern"] for r in rows if not r["correct"]))[: generator.PATTERNS_PER_JOB]
+    if missed:
+        queue_generation(background, attempt["course"], "after-attempt", missed)
     return JSONResponse(done)
+
+
+def queue_generation(background: BackgroundTasks, course_id: str, reason: str, patterns: list[str] | None = None) -> str | None:
+    from app.web import get_course
+    course, errors = get_course(course_id)
+    if errors:
+        return None
+    job_id = generator.start(course, course_id, reason, patterns)
+    if job_id:
+        background.add_task(generator.run, course, course_id, job_id)
+    return job_id
+
+
+@router.post("/practice/{course_id}/generate")
+def generate_now(request: Request, course_id: str, background: BackgroundTasks):
+    course, error = course_or_error_page(request, course_id)
+    if error:
+        return error
+    queue_generation(background, course_id, "button")
+    return RedirectResponse(f"/practice/{course_id}#ai", status_code=303)
+
+
+@router.get("/practice/{course_id}/gen-status")
+def generation_status(course_id: str):
+    job = db.running_job(course_id)
+    return {"running": bool(job), "made": job["made"] if job else 0, "rejected": job["rejected"] if job else 0,
+            "ready": db.generated_counts(course_id)["ready"]}
+
+
+@router.post("/question/{question_id}/report")
+def report_question(question_id: str, back: str = Form("/")):
+    db.report_question(question_id)
+    # Only redirect within this site
+    return RedirectResponse(back if back.startswith("/") and not back.startswith("//") else "/", status_code=303)
 
 
 @router.get("/attempt/{attempt_id}/results", response_class=HTMLResponse)

@@ -43,15 +43,20 @@ def enrich(course: Course, q: dict, source: str) -> dict:
     }
 
 
-def pool(course: Course, concept: str | None = None) -> list[dict]:
+def pool(course: Course, concept: str | None = None, generated: list[dict] | None = None) -> list[dict]:
+    """Bank questions from the YAML, plus any AI-generated ones that passed the validator."""
     questions = [enrich(course, q, "bank") for q in course.questions.values()]
+    questions += [enrich(course, q, "ai") for q in (generated or []) if q["pattern"] in course.patterns]
     if concept:
         questions = [q for q in questions if q["concept"] == concept]
     return questions
 
 
-def pick(course: Course, questions: list[dict], n: int, rng=random) -> list[dict]:
-    """Choose n questions with domain counts proportional to the exam weights, topping up from other domains if one runs short."""
+def pick(course: Course, questions: list[dict], n: int, rng=random, seen: dict | None = None) -> list[dict]:
+    """Choose n questions with domain counts proportional to the exam weights, topping up from other domains if one runs short.
+    Within a domain, questions you've answered fewer times come first, so fresh AI questions get used."""
+    seen = seen or {}
+    freshest = lambda q: (seen.get(q["id"], 0), rng.random())
     if n >= len(questions):
         chosen = list(questions)
         rng.shuffle(chosen)
@@ -60,7 +65,7 @@ def pick(course: Course, questions: list[dict], n: int, rng=random) -> list[dict
     for q in questions:
         by_domain.setdefault(q["domain"], []).append(q)
     for qs in by_domain.values():
-        rng.shuffle(qs)
+        qs.sort(key=freshest)
 
     weights = {d["id"]: d["weight"] for d in course.cert["domains"]}
     raw = {d: n * weights.get(d, 0) / 100 for d in by_domain}

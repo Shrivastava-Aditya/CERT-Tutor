@@ -141,37 +141,9 @@ def validate(course: Course) -> list[Issue]:
             issues.append(Issue("error", w, f"pattern '{q['pattern']}' doesn't exist"))
             continue
         used_patterns.add(pattern["id"])
-        pattern_traps = {t.get("id") for t in pattern.get("traps", [])}
-
-        if q.get("domain") and q["domain"] not in domains:
-            issues.append(Issue("error", w, f"domain '{q['domain']}' isn't one of {sorted(domains)}"))
-        if q.get("qualifier", "none") not in qualifiers:
-            issues.append(Issue("error", w, f"qualifier '{q['qualifier']}' isn't one of {sorted(qualifiers)}"))
-
-        stem = q["stem"].lower()
-        for clue in q["clues"]:
-            if str(clue).lower() not in stem:
-                issues.append(Issue("error", w, f"clue '{clue}' doesn't appear in the question text"))
-
-        options = q["options"]
-        choose = q.get("choose", 1)
-        if not 3 <= len(options) <= 6:
-            issues.append(Issue("error", w, f"has {len(options)} options; use 3 to 6"))
-        correct = [o for o in options if o.get("correct")]
-        if len(correct) != choose:
-            issues.append(Issue("error", w, f"choose is {choose} but {len(correct)} option(s) are marked correct"))
-        for n, o in enumerate(options, start=1):
-            if not o.get("text"):
-                issues.append(Issue("error", w, f"option {n} has no text"))
-            if o.get("correct") and o.get("trap"):
-                issues.append(Issue("error", w, f"option {n} is marked correct and also has a trap"))
-            if not o.get("correct"):
-                if not o.get("trap"):
-                    issues.append(Issue("error", w, f"wrong option {n} has no trap, so a miss can't be tracked"))
-                elif o["trap"] not in pattern_traps:
-                    issues.append(Issue("error", w, f"option {n} uses trap '{o['trap']}', which pattern '{pattern['id']}' doesn't define"))
-                else:
-                    used_traps.add(o["trap"])
+        for problem in question_problems(q, pattern, domains, qualifiers):
+            issues.append(Issue("error", w, problem))
+        used_traps.update(o["trap"] for o in q["options"] if not o.get("correct") and o.get("trap"))
 
     # ---- coverage reminders ----
     for p in course.patterns.values():
@@ -186,3 +158,46 @@ def validate(course: Course) -> list[Issue]:
             issues.append(Issue("warning", where("concept", c["id"]), "no patterns for this concept yet"))
 
     return issues
+
+
+def question_problems(q: dict, pattern: dict, domains: set, qualifiers: set) -> list[str]:
+    """Every rule a single question must pass. Used for the YAML bank and for AI-generated questions alike."""
+    problems = []
+    for field in ("stem", "clues", "options", "explain"):
+        if not q.get(field):
+            problems.append(f"missing {field}")
+    if problems:
+        return problems
+    pattern_traps = {t.get("id") for t in pattern.get("traps", [])}
+
+    if q.get("domain") and q["domain"] not in domains:
+        problems.append(f"domain '{q['domain']}' isn't one of {sorted(domains)}")
+    if q.get("qualifier", "none") not in qualifiers:
+        problems.append(f"qualifier '{q['qualifier']}' isn't one of {sorted(qualifiers)}")
+
+    stem = q["stem"].lower()
+    for clue in q["clues"]:
+        if str(clue).lower() not in stem:
+            problems.append(f"clue '{clue}' doesn't appear in the question text")
+
+    options = q["options"]
+    choose = q.get("choose", 1)
+    if not 3 <= len(options) <= 6:
+        problems.append(f"has {len(options)} options; use 3 to 6")
+    correct = [o for o in options if o.get("correct")]
+    if len(correct) != choose:
+        problems.append(f"choose is {choose} but {len(correct)} option(s) are marked correct")
+    texts = [str(o.get("text", "")).strip().lower() for o in options]
+    if len(set(texts)) != len(texts):
+        problems.append("two options have the same text")
+    for n, o in enumerate(options, start=1):
+        if not o.get("text"):
+            problems.append(f"option {n} has no text")
+        if o.get("correct") and o.get("trap"):
+            problems.append(f"option {n} is marked correct and also has a trap")
+        if not o.get("correct"):
+            if not o.get("trap"):
+                problems.append(f"wrong option {n} has no trap, so a miss can't be tracked")
+            elif o["trap"] not in pattern_traps:
+                problems.append(f"option {n} uses trap '{o['trap']}', which pattern '{pattern['id']}' doesn't define")
+    return problems

@@ -511,3 +511,15 @@ mark.clue-hit { background: var(--learning-soft); color: inherit; border-radius:
 .cmap-node.m-mastered .ring { stroke: var(--mastered); filter: drop-shadow(0 0 8px var(--mastered)); }
 .cmap-legend .key-learning { border-color: var(--learning); background: var(--surface-2); }
 .cmap-legend .key-mastered { border-color: var(--mastered); background: var(--surface-2); box-shadow: 0 0 6px var(--mastered); }
+
+/* AI generator */
+.ai-model { font: 500 12px var(--mono); color: var(--accent); border: 1px solid var(--accent-soft); border-radius: 999px; padding: 2px 10px; }
+.ai-panel { display: grid; gap: 14px; }
+.ai-stats { display: flex; flex-wrap: wrap; gap: 28px; }
+.ai-stats b { display: block; font: 700 26px var(--mono); font-variant-numeric: tabular-nums; }
+.ai-stats span { font-size: 13px; color: var(--muted); }
+.ai-jobs summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+.pct-pill.ai { background: var(--accent-soft); color: var(--accent); }
+.report { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0; }
+.spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; margin-right: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -13,6 +13,21 @@ The provider icons are not stored in git. AWS, Microsoft and the CNCF allow them
 
 Then open http://<homelab-ip>:8090. Health check: `curl localhost:8090/health`.
 
+## Settings (`.env`)
+
+| Variable | Default | What it does |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | (none) | Turns on the AI question generator |
+| `QUESTION_MODEL` | `claude-opus-5-5` | Model that writes questions |
+| `GEN_DAILY_LIMIT` | `60` | Most AI questions generated per day (about $0.03 per 2 questions on Opus 5.5) |
+
+## Tests
+
+```
+docker compose run --rm test                                              # pytest
+docker compose run --rm test python tools/validate.py content/aws-saa-c03 # content checks
+```
+
 ## Layout
 
 | Path | What it holds |

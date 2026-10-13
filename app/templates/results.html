@@ -77,6 +77,7 @@
         <span class="pct-pill {{ 'good' if q.ok else 'bad' }}">{{ "Correct" if q.ok else ("Wrong" if q.chosen else "Unanswered") }}</span>
         <a class="concept-chip" href="/course/{{ course_id }}/{{ q.concept }}">{{ q.concept_title }}</a>
         {% if q.flagged %}<span class="pct-pill flag">Flagged</span>{% endif %}
+        {% if q.source == "ai" %}<span class="pct-pill ai">AI</span>{% endif %}
         {% if q.seconds %}<span class="secs">{{ q.seconds | round | int }}s</span>{% endif %}
       </div>
       <p class="q-stem">{{ q.stem | highlight(q.clues) }}</p>
@@ -94,6 +95,13 @@
       </div>
       <div class="rule"><span class="rule-label">Pattern</span><span>{{ q.rule }}</span></div>
       <p class="explain">{{ q.explain }}</p>
+      {% if q.source == "ai" %}
+      <form class="report" method="post" action="/question/{{ q.id }}/report">
+        <input type="hidden" name="back" value="/attempt/{{ attempt.id }}/results">
+        <button class="btn small" type="submit">Report a problem with this question</button>
+        <span class="note">Reported questions are removed from future exams.</span>
+      </form>
+      {% endif %}
     </article>
     {% endfor %}
   </section>

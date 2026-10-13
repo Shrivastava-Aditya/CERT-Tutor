@@ -44,6 +44,31 @@ CREATE TABLE IF NOT EXISTS answers (
     answered_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS answers_course ON answers(course, pattern);
+CREATE TABLE IF NOT EXISTS generated_questions (
+    id          TEXT PRIMARY KEY,
+    course      TEXT NOT NULL,
+    pattern     TEXT NOT NULL,
+    data        TEXT NOT NULL,          -- the question, same shape as a YAML bank question
+    status      TEXT NOT NULL,          -- ready | rejected | reported
+    problems    TEXT,                   -- why the validator rejected it
+    model       TEXT,
+    job_id      TEXT,
+    created_at  REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS gen_jobs (
+    id            TEXT PRIMARY KEY,
+    course        TEXT NOT NULL,
+    reason        TEXT NOT NULL,        -- button | after-attempt
+    patterns      TEXT NOT NULL,        -- JSON list of pattern ids
+    status        TEXT NOT NULL,        -- running | done | failed
+    made          INTEGER NOT NULL DEFAULT 0,
+    rejected      INTEGER NOT NULL DEFAULT 0,
+    input_tokens  INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    error         TEXT,
+    started_at    REAL NOT NULL,
+    finished_at   REAL
+);
 """
 
 
@@ -120,6 +145,76 @@ def course_answers(course) -> list[dict]:
     with connect() as conn:
         rows = conn.execute("SELECT * FROM answers WHERE course = ? ORDER BY answered_at", (course,)).fetchall()
     return [{**dict(r), "traps": json.loads(r["traps"]), "chosen": json.loads(r["chosen"])} for r in rows]
+
+
+def times_seen(course) -> dict[str, int]:
+    """question id -> how many times you've answered it, so exams can prefer questions you haven't seen."""
+    with connect() as conn:
+        rows = conn.execute("SELECT question_id, COUNT(*) AS n FROM answers WHERE course = ? GROUP BY question_id", (course,)).fetchall()
+    return {r["question_id"]: r["n"] for r in rows}
+
+
+# ---------------- AI-generated questions ----------------
+
+def add_generated(course, pattern, question, status, problems, model, job_id):
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO generated_questions (id, course, pattern, data, status, problems, model, job_id, created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+            (question["id"], course, pattern, json.dumps(question), status, json.dumps(problems) if problems else None, model, job_id, time.time()),
+        )
+
+
+def ready_generated(course) -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute("SELECT data FROM generated_questions WHERE course = ? AND status = 'ready'", (course,)).fetchall()
+    return [json.loads(r["data"]) for r in rows]
+
+
+def generated_counts(course) -> dict:
+    with connect() as conn:
+        rows = conn.execute("SELECT status, COUNT(*) AS n FROM generated_questions WHERE course = ? GROUP BY status", (course,)).fetchall()
+        today = conn.execute(
+            "SELECT COUNT(*) FROM generated_questions WHERE course = ? AND date(created_at, 'unixepoch', 'localtime') = date('now', 'localtime')",
+            (course,)).fetchone()[0]
+    counts = {r["status"]: r["n"] for r in rows}
+    return {"ready": counts.get("ready", 0), "rejected": counts.get("rejected", 0), "reported": counts.get("reported", 0), "today": today}
+
+
+def report_question(question_id) -> bool:
+    with connect() as conn:
+        return conn.execute("UPDATE generated_questions SET status = 'reported' WHERE id = ? AND status = 'ready'", (question_id,)).rowcount > 0
+
+
+def start_job(job_id, course, reason, patterns):
+    with connect() as conn:
+        conn.execute("INSERT INTO gen_jobs (id, course, reason, patterns, status, started_at) VALUES (?,?,?,?, 'running', ?)",
+                     (job_id, course, reason, json.dumps(patterns), time.time()))
+
+
+def update_job(job_id, **fields):
+    sets = ", ".join(f"{k} = ?" for k in fields)
+    with connect() as conn:
+        conn.execute(f"UPDATE gen_jobs SET {sets} WHERE id = ?", (*fields.values(), job_id))
+
+
+def add_job_tokens(job_id, input_tokens, output_tokens, made, rejected):
+    with connect() as conn:
+        conn.execute("UPDATE gen_jobs SET input_tokens = input_tokens + ?, output_tokens = output_tokens + ?, "
+                     "made = made + ?, rejected = rejected + ? WHERE id = ?", (input_tokens, output_tokens, made, rejected, job_id))
+
+
+def running_job(course) -> dict | None:
+    """A job still marked running. Anything older than 15 minutes is treated as dead (the app restarted mid-job)."""
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM gen_jobs WHERE course = ? AND status = 'running' AND started_at > ? ORDER BY started_at DESC LIMIT 1",
+                           (course, time.time() - 900)).fetchone()
+    return dict(row) if row else None
+
+
+def recent_jobs(course, limit=5) -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute("SELECT * FROM gen_jobs WHERE course = ? ORDER BY started_at DESC LIMIT ?", (course, limit)).fetchall()
+    return [dict(r) for r in rows]
 
 
 # ---------------- XP and streak (shown in the nav bar) ----------------
