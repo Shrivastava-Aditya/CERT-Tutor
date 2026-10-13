@@ -10,10 +10,20 @@
   <link rel="stylesheet" href="{{ asset('style.css') }}">
 </head>
 <body>
+  {% set me = player() %}{% set current = active_course() %}
   <nav class="topnav">
     <a class="brand" href="/">Cert Tutor</a>
     <a href="/" {% if page == 'home' %}aria-current="page"{% endif %}>Home</a>
     <a href="/tracks" {% if page == 'tracks' %}aria-current="page"{% endif %}>Tracks</a>
+    {% if current %}
+    <a href="/practice/{{ current }}" {% if page == 'practice' %}aria-current="page"{% endif %}>Practice</a>
+    <a href="/insights/{{ current }}" {% if page == 'insights' %}aria-current="page"{% endif %}>Insights</a>
+    {% endif %}
+    <span class="player" title="Level {{ me.level }} · {{ me.xp }} XP · {{ me.streak }}-day streak">
+      <span class="lvl">L{{ me.level }}</span>
+      <span class="xpbar"><i style="width: {{ (me.xp % 500) / 5 }}%"></i></span>
+      <span class="streak{% if me.studied_today %} lit{% endif %}">🔥 {{ me.streak }}</span>
+    </span>
   </nav>
   {% block body %}{% endblock %}
   {% block scripts %}{% endblock %}

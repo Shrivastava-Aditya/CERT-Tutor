@@ -86,6 +86,7 @@
       .attr("class", d => [
         "cmap-node",
         d.written ? "written" : "ghost",
+        d.written ? `m-${d.mastery || "new"}` : "",
         d.id === focus ? "focus" : "",
         focus && !near.has(d.id) ? "dim" : "",
       ].join(" "))

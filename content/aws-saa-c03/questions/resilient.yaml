@@ -16,6 +16,7 @@
     Replicas are asynchronous and promoted by hand, snapshots lose recent data, and a bigger instance is still in one AZ.
 
 - id: offload-reporting-reads-1
+  domain: performance            # the exam grades this under performance, not the concept's domain
   pattern: offload-reporting-reads
   qualifier: least-changes
   stem: >-
@@ -49,6 +50,7 @@
     local reads. Multi-AZ is single-Region, hourly copies mean an hour of RPO, and DynamoDB isn't relational.
 
 - id: spiky-relational-serverless-1
+  domain: cost            # the exam grades this under cost, not the concept's domain
   pattern: spiky-relational-serverless
   qualifier: most-cost-effective
   stem: >-
@@ -83,6 +85,7 @@
     read-only, and single-Region options don't survive losing that Region.
 
 - id: dynamodb-microsecond-reads-1
+  domain: performance            # the exam grades this under performance, not the concept's domain
   pattern: dynamodb-microsecond-reads
   qualifier: least-changes
   stem: >-
@@ -201,6 +204,7 @@
     fail the ALB check are replaced.
 
 - id: keep-cpu-at-target-1
+  domain: performance            # the exam grades this under performance, not the concept's domain
   pattern: keep-cpu-at-target
   qualifier: least-overhead
   stem: >-
@@ -282,6 +286,7 @@
     For async invocations, events that fail every retry can go to an on-failure destination or DLQ for inspection and replay.
 
 - id: predictable-cold-starts-1
+  domain: performance            # the exam grades this under performance, not the concept's domain
   pattern: predictable-cold-starts
   qualifier: lowest-latency
   stem: >-

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/course/{{ course_id }}">{{ cert.code }}</a><span>/</span><span aria-current="page">Practice</span></nav>
+
+  <header class="course-head">
+    <img src="{{ logo }}" alt="" width="56" height="56">
+    <div>
+      <p class="eyebrow">{{ cert.code }} · test simulator</p>
+      <h1 class="h1-sm">Practice exam</h1>
+    </div>
+  </header>
+
+  <form class="panel start-form" method="post" action="/practice/{{ course_id }}">
+    <fieldset class="modes">
+      <legend>Length</legend>
+      {% for key, (n, minutes, label) in modes.items() %}
+      <label class="mode-card">
+        <input type="radio" name="mode" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+        <span class="mode-name">{{ label }}</span>
+        <span class="mode-meta">{{ [n, pool_size] | min }} questions · {{ minutes }} min</span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    <label class="study-toggle" for="study">
+      <input type="checkbox" id="study" name="study" value="true">
+      <span><b>Study mode</b><small>See the answer, the clue words and the trap after each question. Leave it off for real exam conditions.</small></span>
+    </label>
+    <div class="start-row">
+      <button class="btn primary" type="submit">Start</button>
+      <span class="note">Question bank: {{ pool_size }} questions{% if pool_size < 65 %}. A full exam uses all of them until AI-generated questions arrive{% endif %}.</span>
+    </div>
+  </form>
+
+  {% if analysis.total %}
+  <section class="panel">
+    <div class="panel-head"><h2>Work on these</h2><a href="/insights/{{ course_id }}">All insights →</a></div>
+    {% if analysis.weak %}
+    <ul class="weak-list">
+      {% for p in analysis.weak[:5] %}
+      <li>
+        <span class="pct-pill bad">{{ p.pct }}%</span>
+        <a href="/course/{{ course_id }}/{{ p.concept }}">{{ p.rule }}</a>
+        <form method="post" action="/practice/{{ course_id }}"><input type="hidden" name="concept" value="{{ p.concept }}"><button class="btn small" type="submit">Drill</button></form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="note">No weak patterns yet. Everything you've answered is above 70%.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if attempts %}
+  <section class="panel">
+    <h2>Past attempts</h2>
+    <div class="tbl-wrap"><table class="attempts">
+      <thead><tr><th>When</th><th>Mode</th><th>Correct</th><th>Score</th><th></th></tr></thead>
+      <tbody>
+      {% for a in attempts %}
+        <tr>
+          <td>{{ fmt_time(a.started_at) }}</td>
+          <td>{{ a.mode }}{% if a.study %} · study{% endif %}</td>
+          <td class="num">{{ a.correct }}/{{ a.total }}</td>
+          <td class="num"><span class="pct-pill {{ 'good' if a.score >= cert.exam.passing_score else 'bad' }}">{{ a.score }}</span></td>
+          <td><a href="/attempt/{{ a.id }}/results">Review</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

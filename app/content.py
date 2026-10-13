@@ -143,6 +143,8 @@ def validate(course: Course) -> list[Issue]:
         used_patterns.add(pattern["id"])
         pattern_traps = {t.get("id") for t in pattern.get("traps", [])}
 
+        if q.get("domain") and q["domain"] not in domains:
+            issues.append(Issue("error", w, f"domain '{q['domain']}' isn't one of {sorted(domains)}"))
         if q.get("qualifier", "none") not in qualifiers:
             issues.append(Issue("error", w, f"qualifier '{q['qualifier']}' isn't one of {sorted(qualifiers)}"))
 

@@ -286,6 +286,7 @@
     At about 1 TB per day, the link would need more than two months. Snowball moves the data by shipping in days.
 
 - id: nat-costs-to-s3-1
+  domain: cost            # the exam grades this under cost, not the concept's domain
   pattern: nat-costs-to-s3
   qualifier: most-cost-effective
   stem: >-

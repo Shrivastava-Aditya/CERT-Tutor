@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block body %}
+{% set pct = (100 * attempt.correct / attempt.total) | round | int if attempt.total else 0 %}
+{% set passed = attempt.score >= passing %}
+<main class="wrap results">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/practice/{{ course_id }}">Practice</a><span>/</span><span aria-current="page">Results</span></nav>
+
+  <section class="panel score-panel">
+    <p class="eyebrow">{{ label }}{% if attempt.study %} · study mode{% endif %}</p>
+    <div class="score-row">
+      <div class="big-score" data-count="{{ attempt.score }}">{{ attempt.score }}</div>
+      <div>
+        {% if attempt.mode != "drill" %}<p class="verdict {{ 'pass' if passed else 'fail' }}">{{ "Pass" if passed else "Not yet" }}</p>{% endif %}
+        <p class="score-stats"><b>{{ attempt.correct }}/{{ attempt.total }}</b> correct · <b>{{ pct }}%</b> · <b>{{ (used // 60) | int }}m {{ (used % 60) | int }}s</b>{% if xp %} · <span class="xp-earned">+{{ xp }} XP</span>{% endif %}</p>
+      </div>
+    </div>
+    {% if attempt.mode != "drill" %}
+    <div class="scale"><span class="scale-fill {{ 'good' if passed else 'bad' }}" style="--w: {{ ((attempt.score - 100) / 9) | round(1) }}%"></span><span class="scale-cut" style="left: {{ ((passing - 100) / 9) | round(1) }}%"><span>{{ passing }}</span></span></div>
+    <div class="scale-ends"><span>100</span><span>1000</span></div>
+    <p class="note">Estimated: your percentage mapped onto AWS's 100–1000 scale. The real exam's scaling isn't published.</p>
+    {% endif %}
+  </section>
+
+  <div class="results-grid">
+    <section class="panel">
+      <h2>By domain</h2>
+      {% for d in analysis.domains if d.total %}
+      <div class="drow dom-{{ d.id }}">
+        <span class="dname">{{ d.name }}</span>
+        <span class="pct-pill {{ 'good' if d.pct >= 70 else 'bad' }}">{{ d.pct }}%</span>
+        <div class="bar"><i style="--w: {{ d.pct }}%"></i><span class="mk"></span></div>
+        <span class="dmeta">{{ d.correct }} of {{ d.total }} correct</span>
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="panel">
+      <h2>Traps that caught you</h2>
+      {% if analysis.traps %}
+      <ul class="trap-list">
+        {% for t in analysis.traps[:6] %}<li><b>{{ t.option }}{% if t.count > 1 %} ×{{ t.count }}{% endif %}</b><span>{{ t.why }}</span></li>{% endfor %}
+      </ul>
+      {% else %}
+      <p class="note">None this time. Every wrong answer was a blank, or there were no wrong answers.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {% if analysis.weak %}
+  <section class="panel">
+    <h2>Patterns to work on</h2>
+    <ul class="weak-list">
+      {% for p in analysis.weak[:8] %}
+      <li>
+        <span class="pct-pill bad">{{ p.correct }}/{{ p.total }}</span>
+        <a href="/course/{{ course_id }}/{{ p.concept }}">{{ p.rule }}</a>
+        <form method="post" action="/practice/{{ course_id }}"><input type="hidden" name="concept" value="{{ p.concept }}"><button class="btn small" type="submit">Drill</button></form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="review-list">
+    <div class="panel-head">
+      <h2>Every question</h2>
+      <div class="chips" role="group" aria-label="Filter">
+        <button class="chip" data-filter="all" aria-pressed="true">All ({{ review | length }})</button>
+        <button class="chip" data-filter="wrong" aria-pressed="false">Wrong ({{ review | rejectattr('ok') | list | length }})</button>
+        <button class="chip" data-filter="flagged" aria-pressed="false">Flagged ({{ review | selectattr('flagged') | list | length }})</button>
+      </div>
+    </div>
+    {% for q in review %}
+    <article class="ritem" data-ok="{{ q.ok | lower }}" data-flagged="{{ q.flagged | lower }}">
+      <div class="ritem-top">
+        <span class="q-num">Q{{ q.n }}</span>
+        <span class="pct-pill {{ 'good' if q.ok else 'bad' }}">{{ "Correct" if q.ok else ("Wrong" if q.chosen else "Unanswered") }}</span>
+        <a class="concept-chip" href="/course/{{ course_id }}/{{ q.concept }}">{{ q.concept_title }}</a>
+        {% if q.flagged %}<span class="pct-pill flag">Flagged</span>{% endif %}
+        {% if q.seconds %}<span class="secs">{{ q.seconds | round | int }}s</span>{% endif %}
+      </div>
+      <p class="q-stem">{{ q.stem | highlight(q.clues) }}</p>
+      <div class="opts">
+        {% for o in q.options %}
+        <div class="opt {{ 'multi' if q.choose > 1 else 'single' }}{% if o.correct %} is-right{% elif o.id in q.chosen %} is-wrong{% endif %}">
+          <span class="k">{{ "ABCDE"[loop.index0] }}</span>
+          <span class="opt-text">{{ o.text }}
+            {% if o.correct and o.id in q.chosen %}<span class="opt-tag">Your answer · correct</span>
+            {% elif o.correct %}<span class="opt-tag">Correct answer</span>
+            {% elif o.id in q.chosen %}<span class="opt-tag">Your answer</span>{% if o.trap_why %}<span class="opt-why">Trap: {{ o.trap_why }}</span>{% endif %}{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="rule"><span class="rule-label">Pattern</span><span>{{ q.rule }}</span></div>
+      <p class="explain">{{ q.explain }}</p>
+    </article>
+    {% endfor %}
+  </section>
+
+  <div class="row">
+    <a class="btn primary" href="/practice/{{ course_id }}">New attempt</a>
+    <a class="btn" href="/insights/{{ course_id }}">All insights</a>
+  </div>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  // Count the score up from 100, unless the viewer prefers less motion
+  (function () {
+    const el = document.querySelector(".big-score");
+    const target = +el.dataset.count;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const start = performance.now(), from = 100, ms = 1100;
+    (function step(now) {
+      const t = Math.min(1, (now - start) / ms), eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(from + (target - from) * eased);
+      if (t < 1) requestAnimationFrame(step);
+    })(start);
+  })();
+  // Filter the question list
+  document.querySelectorAll(".review-list .chip").forEach(chip => chip.addEventListener("click", () => {
+    const f = chip.dataset.filter;
+    document.querySelectorAll(".review-list .chip").forEach(c => c.setAttribute("aria-pressed", c === chip));
+    document.querySelectorAll(".ritem").forEach(item => {
+      item.hidden = (f === "wrong" && item.dataset.ok === "true") || (f === "flagged" && item.dataset.flagged !== "true");
+    });
+  }));
+</script>
+{% endblock %}

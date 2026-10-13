@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="exam-bar">
+  <div class="exam-bar-in">
+    <span class="exam-title">{{ cert.code }} <span>· {{ label }}</span></span>
+    <span class="timer" id="timer" aria-live="off"></span>
+  </div>
+  <div class="exam-prog"><i id="prog"></i></div>
+</div>
+<main class="wrap exam" id="exam" aria-live="polite">
+  <noscript><p class="panel">The exam needs JavaScript.</p></noscript>
+</main>
+<script type="application/json" id="exam-config">{{ config | tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script src="{{ asset('js/exam.js') }}"></script>
+{% endblock %}

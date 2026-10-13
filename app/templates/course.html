@@ -11,6 +11,11 @@
     </div>
   </header>
 
+  <div class="row">
+    <a class="btn primary" href="/practice/{{ course_id }}">Practice exam</a>
+    <a class="btn" href="/insights/{{ course_id }}">Insights{% if analysis.total %} · {{ analysis.pct }}% correct{% endif %}</a>
+  </div>
+
   <div class="stat-strip">
     <div><b>{{ counts.concepts }}</b><span>concepts written</span></div>
     <div><b>{{ counts.patterns }}</b><span>exam patterns</span></div>

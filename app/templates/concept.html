@@ -71,7 +71,11 @@
     <p class="note">The clue words that point to this answer, and the wrong answers the exam keeps offering.</p>
     {% for p in patterns %}
     <article class="pattern-card" style="--i: {{ loop.index0 }}">
-      <div class="clue-row">{% for clue in p.clues %}<span class="clue-chip">{{ clue }}</span>{% endfor %}</div>
+      <div class="clue-row">
+        {% for clue in p.clues %}<span class="clue-chip">{{ clue }}</span>{% endfor %}
+        {% set score = pattern_scores.get(p.id) %}
+        {% if score %}<span class="pct-pill {{ 'good' if score.pct >= 70 else 'bad' }} pattern-score">You: {{ score.correct }}/{{ score.total }}</span>{% endif %}
+      </div>
       <p class="rule-text">{{ p.rule }}</p>
       <details>
         <summary>{{ p.traps | length }} traps to avoid</summary>
@@ -81,7 +85,10 @@
       </details>
     </article>
     {% endfor %}
-    <button class="btn" disabled title="Arrives in loop 4">Drill these patterns · loop 4</button>
+    <form method="post" action="/practice/{{ course_id }}">
+      <input type="hidden" name="concept" value="{{ concept.id }}">
+      <button class="btn primary" type="submit">Drill this concept · {{ question_count }} question{{ "s" if question_count != 1 }}</button>
+    </form>
   </section>
   {% endif %}
 

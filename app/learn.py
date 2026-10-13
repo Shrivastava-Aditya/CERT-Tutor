@@ -41,7 +41,7 @@ def domains_with_concepts(course: Course) -> list[dict]:
     ]
 
 
-def graph(course: Course, course_id: str) -> dict:
+def graph(course: Course, course_id: str, mastery: dict | None = None) -> dict:
     """Nodes and links for the concept map. Related concepts that aren't written yet become ghost nodes."""
     stats = concept_stats(course)
     nodes = {
@@ -49,6 +49,7 @@ def graph(course: Course, course_id: str) -> dict:
             "id": c["id"], "title": c["title"], "domain": c["domain"], "written": True,
             "url": f"/course/{course_id}/{c['id']}", "icon": icon_url(c.get("icon", "")),
             "questions": stats[c["id"]]["questions"],
+            "mastery": (mastery or {}).get(c["id"], "new"),   # new | learning | mastered
         }
         for c in course.concepts.values()
     }

@@ -1,4 +1,5 @@
 - id: ebs-gp2-to-gp3-1
+  domain: cost            # the exam grades this under cost, not the concept's domain
   pattern: ebs-gp2-to-gp3
   qualifier: most-cost-effective
   stem: >-

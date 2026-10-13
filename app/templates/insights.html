@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/course/{{ course_id }}">{{ cert.code }}</a><span>/</span><span aria-current="page">Insights</span></nav>
+  <header>
+    <p class="eyebrow">{{ cert.code }} · weakness analysis</p>
+    <h1 class="h1-sm">Insights</h1>
+    <p class="lede">Built from every answer you've given: which patterns you miss, which traps you fall for, and which question styles slow you down.</p>
+  </header>
+
+  {% if not analysis.total %}
+  <section class="panel empty-state">
+    <h2>Nothing to analyse yet</h2>
+    <p>Answer some questions and this page fills up with your weak patterns, favourite traps and domain scores.</p>
+    <a class="btn primary" href="/practice/{{ course_id }}">Start practising</a>
+  </section>
+  {% else %}
+  <div class="stat-strip">
+    <div><b>{{ analysis.total }}</b><span>answers</span></div>
+    <div><b>{{ analysis.pct }}%</b><span>correct overall</span></div>
+    <div><b>{{ analysis.weak | length }}</b><span>weak patterns</span></div>
+    <div><b>{{ analysis.avg_seconds }}s</b><span>average per question{% if analysis.slow %} · {{ analysis.slow }} over 2.5 min{% endif %}</span></div>
+  </div>
+
+  <div class="results-grid">
+    <section class="panel">
+      <h2>By domain</h2>
+      {% for d in analysis.domains %}
+      <div class="drow dom-{{ d.id }}">
+        <span class="dname">{{ d.name }} <small>{{ d.weight }}%</small></span>
+        <span class="pct-pill {{ 'good' if d.pct >= 70 else ('bad' if d.total else '') }}">{{ d.pct if d.total else "–" }}{% if d.total %}%{% endif %}</span>
+        <div class="bar"><i style="--w: {{ d.pct }}%"></i><span class="mk"></span></div>
+        <span class="dmeta">{{ d.correct }} of {{ d.total }} correct</span>
+      </div>
+      {% endfor %}
+    </section>
+
+    <section class="panel">
+      <h2>Question qualifiers</h2>
+      <p class="note">How you do when the question asks for the cheapest, simplest or most secure option.</p>
+      {% for q in analysis.qualifiers %}
+      <div class="drow">
+        <span class="dname">{{ q.id | replace("-", " ") }}</span>
+        <span class="pct-pill {{ 'good' if q.pct >= 70 else 'bad' }}">{{ q.pct }}%</span>
+        <div class="bar"><i style="--w: {{ q.pct }}%"></i><span class="mk"></span></div>
+        <span class="dmeta">{{ q.correct }} of {{ q.total }}</span>
+      </div>
+      {% else %}<p class="note">No qualifier questions answered yet.</p>{% endfor %}
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Traps you fall for</h2>
+    {% if analysis.traps %}
+    <ul class="trap-list">
+      {% for t in analysis.traps[:10] %}
+      <li><b>{{ t.option }} ×{{ t.count }}</b><span>{{ t.why }}</span><small class="trap-rule">Right idea: {{ t.rule }}</small></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="note">No traps yet. Every wrong answer so far was left blank.</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Patterns, weakest first</h2>
+    <div class="tbl-wrap"><table class="patterns-table">
+      <thead><tr><th>Pattern</th><th>Concept</th><th>Score</th><th>Last</th><th></th></tr></thead>
+      <tbody>
+      {% for p in analysis.patterns %}
+        <tr>
+          <td class="rule-cell">{{ p.rule }}</td>
+          <td><a href="/course/{{ course_id }}/{{ p.concept }}">{{ p.concept_title }}</a></td>
+          <td class="num"><span class="pct-pill {{ 'good' if p.pct >= 70 else 'bad' }}">{{ p.correct }}/{{ p.total }}</span></td>
+          <td>{{ "✓" if p.last_correct else "✗" }}</td>
+          <td><form method="post" action="/practice/{{ course_id }}"><input type="hidden" name="concept" value="{{ p.concept }}"><button class="btn small" type="submit">Drill</button></form></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  {% if attempts %}
+  <section class="panel">
+    <h2>Score history</h2>
+    <div class="history">
+      {% for a in attempts | reverse %}
+      <a class="hbar {{ 'good' if a.score >= passing else 'bad' }}" href="/attempt/{{ a.id }}/results" style="--h: {{ ((a.score - 100) / 9) | round(1) }}%" title="{{ fmt_time(a.started_at) }} · {{ a.mode }} · {{ a.score }}"><span>{{ a.score }}</span></a>
+      {% endfor %}
+      <span class="hline" style="bottom: {{ ((passing - 100) / 9) | round(1) }}%"><span>{{ passing }}</span></span>
+    </div>
+  </section>
+  {% endif %}
+  {% endif %}
+</main>
+{% endblock %}
