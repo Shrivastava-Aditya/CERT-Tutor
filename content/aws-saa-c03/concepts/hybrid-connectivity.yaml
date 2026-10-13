@@ -1,0 +1,44 @@
+id: hybrid-connectivity
+domain: resilient
+title: Direct Connect and Site-to-Site VPN
+summary: Connecting your data center to AWS. A dedicated private line, an encrypted internet tunnel, or both.
+icon: aws:direct-connect
+
+teach: |
+  | | AWS Direct Connect | AWS Site-to-Site VPN |
+  |---|---|---|
+  | Path | **Dedicated private fiber** to an AWS location | IPsec tunnels **over the internet** |
+  | Speed | 1, 10, 100 Gbps dedicated (or hosted, from 50 Mbps) | Up to ~1.25 Gbps per tunnel |
+  | Setup time | **Weeks** to months | **Minutes to hours** |
+  | Encryption | Not by default (add MACsec or a VPN on top) | **Always encrypted** |
+  | Cost | Higher, steady | Low |
+
+  - **Resilient and cost-aware:** Direct Connect as primary, with a **Site-to-Site VPN as backup**. BGP fails over automatically.
+  - **Maximum resilience:** two Direct Connect connections at **two different locations**.
+  - **Transit Gateway** acts as a hub connecting many VPCs and on-premises networks through one attachment.
+
+under_the_hood: |
+  Both connections carry routes using BGP. When the Direct Connect link drops, its routes are withdrawn, and traffic shifts
+  to the VPN's routes within seconds. You can prefer Direct Connect using AS path prepending or more specific prefixes.
+
+  Each VPN connection has two tunnels, ending in different AZs, so AWS-side maintenance doesn't take it down.
+
+observe:
+  - text: "Check the status of both VPN tunnels:"
+    cmd: "aws ec2 describe-vpn-connections --query 'VpnConnections[].VgwTelemetry[].[OutsideIpAddress,Status]'"
+  - text: "Tailscale or WireGuard on your homelab is the same idea as Site-to-Site VPN: an encrypted tunnel across the public internet between two networks."
+
+case_study: |
+  A hospital runs imaging systems on-premises and analytics in AWS over a 10 Gbps Direct Connect. A fiber cut once took the link
+  down for a day. They added a Site-to-Site VPN as a BGP backup for a few dollars a day. The next cut failed over in seconds, at
+  lower speed but encrypted and online.
+
+other_clouds:
+  azure: "ExpressRoute and VPN Gateway"
+  gcp: "Cloud Interconnect (Dedicated or Partner) and Cloud VPN (HA VPN)"
+
+links:
+  - { title: "What is AWS Direct Connect?", url: "https://docs.aws.amazon.com/directconnect/latest/UserGuide/Welcome.html" }
+  - { title: "What is AWS Site-to-Site VPN?", url: "https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html" }
+
+related: [vpc-endpoints, dr-strategies, data-migration]

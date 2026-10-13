@@ -1,0 +1,39 @@
+id: dynamodb
+domain: resilient
+title: Amazon DynamoDB
+summary: Serverless key-value database with single-digit millisecond latency, global tables and the DAX cache.
+icon: aws:dynamodb
+
+teach: |
+  - **Serverless key-value and document database.** You design around a **partition key** (plus an optional sort key) and get single-digit millisecond reads at any scale.
+  - **Capacity modes:** **on-demand** (pay per request, good for unknown traffic) or **provisioned** (set read and write capacity, with optional auto scaling).
+  - **Global tables:** replicas in several Regions, **every replica accepts reads and writes** (multi-active), with automatic replication. For global, low-latency, Region-proof apps.
+  - **DAX (DynamoDB Accelerator):** an in-memory cache in front of a table. Reads in **microseconds**, using the same DynamoDB API, so code changes are minimal.
+  - **Streams:** a log of item changes for Lambda triggers. **TTL** expires old items for free. **PITR** restores to any second in the last 35 days.
+
+under_the_hood: |
+  Data is spread across partitions by hashing the partition key, and each partition is copied to three AZs. A "hot key"
+  that every request uses lands on one partition, which is why good key design matters more than capacity.
+
+  Global tables replicate asynchronously, typically within a second. If the same item is written in two Regions at once,
+  the last writer wins.
+
+observe:
+  - text: "Describe a table's key schema, capacity mode and replicas:"
+    cmd: "aws dynamodb describe-table --table-name players --query 'Table.[KeySchema,BillingModeSummary,Replicas]'"
+  - text: "A partition key works like a hash map's key: `dict[key]` is instant, while scanning every value is slow. DynamoDB `Query` versus `Scan` is the same difference."
+
+case_study: |
+  A mobile game's players in three continents saw lag on profile saves to us-east-1. The team turned the players table into a
+  global table with replicas in us-east-1, eu-west-1 and ap-northeast-1. Each player now reads and writes to the nearest Region,
+  and the game keeps working if one Region goes down.
+
+other_clouds:
+  azure: "Azure Cosmos DB (multi-region writes, several APIs)"
+  gcp: "Firestore and Bigtable; Spanner for globally consistent data"
+
+links:
+  - { title: Global tables, url: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html" }
+  - { title: DynamoDB Accelerator (DAX), url: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.html" }
+
+related: [aurora, elasticache, lambda-resilience]

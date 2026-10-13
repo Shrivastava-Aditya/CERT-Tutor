@@ -1,0 +1,42 @@
+id: aurora
+domain: resilient
+title: Amazon Aurora
+summary: AWS's cloud-built MySQL- and PostgreSQL-compatible database, with Global Database and Serverless v2.
+icon: aws:aurora
+
+teach: |
+  - **Storage:** six copies across three AZs, grows automatically up to 128 TiB, and heals itself.
+  - **Up to 15 Aurora Replicas** share that storage. The **reader endpoint** load-balances reads across them, and a replica is promoted automatically if the writer fails.
+  - **Aurora Global Database:** one primary Region and up to several read-only secondary Regions.
+    - Replication lag is typically **under 1 second** (that's the **RPO**).
+    - A secondary can be promoted in about **a minute** (that's the **RTO**).
+    - Secondaries also serve **low-latency local reads**.
+  - **Aurora Serverless v2:** capacity scales up and down in fine steps as load changes. Good for **spiky or unpredictable** workloads. You pay for what's used.
+  - Exam cues: *relational + cross-Region DR with seconds of RPO* → Global Database; *idle most of the day, sudden bursts* → Serverless v2.
+
+under_the_hood: |
+  Aurora separates compute from storage. The writer sends only redo log records to the storage layer, which needs 4 of 6
+  copies to acknowledge each write and 3 of 6 to serve reads. That's why it survives losing an entire AZ, plus one more copy, without losing data.
+
+  Replicas read the same storage volume, so their lag is usually milliseconds, unlike RDS read replicas, which replay changes onto separate storage.
+
+observe:
+  - text: "List an Aurora cluster's endpoints (writer, reader, custom):"
+    cmd: "aws rds describe-db-cluster-endpoints --db-cluster-identifier orders-cluster"
+  - text: "See the Regions in a Global Database:"
+    cmd: "aws rds describe-global-clusters --query 'GlobalClusters[].GlobalClusterMembers[].[DBClusterArn,IsWriter]'"
+
+case_study: |
+  A global retailer needs its order database to survive losing a whole Region, with seconds of data loss at most. They move to
+  Aurora Global Database with the primary in us-east-1 and a secondary in eu-west-1. European stores read locally, and a DR
+  drill promotes eu-west-1 in about a minute.
+
+other_clouds:
+  azure: "Azure SQL Database Hyperscale with geo-replication and failover groups; serverless compute tier"
+  gcp: "AlloyDB for PostgreSQL (cross-region replicas); Cloud Spanner for global relational data"
+
+links:
+  - { title: Aurora Global Database, url: "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-global-database.html" }
+  - { title: Aurora Serverless v2, url: "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.html" }
+
+related: [rds-ha, dynamodb, dr-strategies]

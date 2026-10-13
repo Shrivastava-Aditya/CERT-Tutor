@@ -1,0 +1,43 @@
+id: route53-routing
+domain: resilient
+title: Route 53 routing policies
+summary: DNS that can fail over, split traffic, or send users to the nearest or right Region.
+icon: aws:route53
+
+teach: |
+  | Policy | Sends users to | Typical use |
+  |---|---|---|
+  | **Simple** | One answer | A single resource |
+  | **Failover** | Primary while its **health check passes**, otherwise secondary | Active/passive DR, maintenance pages |
+  | **Weighted** | Splits traffic by percentage | Blue/green and canary releases |
+  | **Latency** | The Region with the lowest latency for that user | Multi-Region apps |
+  | **Geolocation** | Based on the user's country or continent | Language, licensing, data residency |
+  | **Geoproximity** | Based on distance, with an adjustable bias | Shifting load between Regions |
+  | **Multivalue answer** | Up to 8 healthy records at random | Simple client-side load spreading |
+
+  - **Alias records** point at AWS resources (ALB, CloudFront, S3 websites), even at the zone apex (`example.com`). Lookups of AWS targets are free.
+  - **Health checks** can watch an endpoint, other health checks, or a CloudWatch alarm.
+
+under_the_hood: |
+  Route 53 only answers DNS questions, so failover takes effect as clients' cached answers expire (the record's TTL). Short
+  TTLs mean faster failover but more DNS queries. Health checkers run from many locations worldwide, and a target is unhealthy
+  only when enough of them agree.
+
+observe:
+  - text: "See the DNS answer and its TTL, the countdown to when clients ask again:"
+    cmd: "dig +noall +answer www.example.com"
+  - text: "On your homelab, `/etc/hosts` maps names to IPs by hand. Route 53 is that, global, with health checks deciding the answer."
+
+case_study: |
+  A SaaS company hosts its app in us-east-1 and wants users to see a friendly maintenance page if it fails. They set up failover
+  routing: the primary record points at the ALB with a health check, and the secondary is an S3 static website in us-west-2.
+  During an outage, users get the maintenance page within a minute instead of a timeout.
+
+other_clouds:
+  azure: "Azure Traffic Manager (priority, weighted, performance, geographic routing) and Azure DNS"
+  gcp: "Cloud DNS routing policies (weighted round robin, geolocation, failover)"
+
+links:
+  - { title: Choosing a routing policy, url: "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html" }
+
+related: [dr-strategies, global-accelerator, cloudfront]

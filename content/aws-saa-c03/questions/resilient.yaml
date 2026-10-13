@@ -1,0 +1,314 @@
+- id: rds-survive-az-failure-1
+  pattern: rds-survive-az-failure
+  qualifier: least-changes
+  stem: >-
+    A company runs a production Amazon RDS for MySQL database in a single Availability Zone. The company needs the
+    database to survive an AZ failure automatically, with no data loss for committed transactions and minimal
+    application changes. What should a solutions architect do?
+  clues: [single Availability Zone, automatically, no data loss]
+  options:
+    - { text: "Convert the DB instance to a Multi-AZ deployment.", correct: true }
+    - { text: "Create a read replica in the same Availability Zone.", trap: replica-same-az-for-ha }
+    - { text: "Take automated snapshots every 5 minutes and restore them in another AZ when needed.", trap: frequent-snapshots-for-ha }
+    - { text: "Change to a larger DB instance class with more memory.", trap: bigger-instance-for-ha }
+  explain: >-
+    Multi-AZ keeps a synchronous standby in another AZ and fails over automatically behind the same DNS endpoint.
+    Replicas are asynchronous and promoted by hand, snapshots lose recent data, and a bigger instance is still in one AZ.
+
+- id: offload-reporting-reads-1
+  pattern: offload-reporting-reads
+  qualifier: least-changes
+  stem: >-
+    An application uses an Amazon RDS for PostgreSQL database. Every morning the analytics team runs long reporting
+    queries that slow down the production workload. How can a solutions architect fix the slowdown with minimal changes?
+  clues: [reporting queries, slow down the production workload]
+  options:
+    - { text: "Create an RDS read replica and point the reporting tools at the replica's endpoint.", correct: true }
+    - { text: "Convert the instance to a Multi-AZ deployment and run reports on the standby.", trap: read-from-multi-az-standby }
+    - { text: "Increase the allocated storage of the DB instance.", trap: more-storage-for-cpu }
+    - { text: "Move the database to Amazon DynamoDB.", trap: rewrite-to-dynamodb }
+  explain: >-
+    A read replica takes the reporting reads off the primary. A standard Multi-AZ standby can't serve reads, more storage
+    doesn't help CPU, and DynamoDB is a rewrite.
+
+- id: global-relational-dr-1
+  pattern: global-relational-dr
+  qualifier: none
+  stem: >-
+    A global company runs a relational database for its order system. It needs cross-Region disaster recovery with an
+    RPO of about 1 second and an RTO of about 1 minute, and the DR Region should also serve low-latency reads. Which
+    solution meets these requirements?
+  clues: [relational, cross-Region, RPO of about 1 second, RTO of about 1 minute]
+  options:
+    - { text: "Amazon Aurora Global Database with a secondary Region", correct: true }
+    - { text: "Amazon RDS Multi-AZ deployment", trap: multi-az-for-region-dr }
+    - { text: "Automated RDS snapshots copied to another Region every hour", trap: hourly-snapshot-copies }
+    - { text: "Amazon DynamoDB global tables", trap: global-tables-not-relational }
+  explain: >-
+    Aurora Global Database replicates with typical lag under a second, promotes a secondary in about a minute, and serves
+    local reads. Multi-AZ is single-Region, hourly copies mean an hour of RPO, and DynamoDB isn't relational.
+
+- id: spiky-relational-serverless-1
+  pattern: spiky-relational-serverless
+  qualifier: most-cost-effective
+  stem: >-
+    A startup runs an internal application whose relational database is idle most of the day but gets sudden,
+    unpredictable bursts of heavy traffic. The team wants to stop paying for idle database capacity and avoid managing
+    capacity by hand. Which database option should a solutions architect recommend?
+  clues: [relational, idle most of the day, unpredictable bursts]
+  options:
+    - { text: "Amazon Aurora Serverless v2", correct: true }
+    - { text: "Amazon RDS for MySQL on a large provisioned instance", trap: big-provisioned-db }
+    - { text: "Amazon RDS with a 3-year Reserved Instance", trap: reserved-idle-db }
+    - { text: "Amazon Redshift", trap: redshift-for-oltp }
+  explain: >-
+    Aurora Serverless v2 adjusts capacity in fine steps, so you pay for what's used and bursts need no manual work.
+    Provisioned and reserved instances pay for peak all day, and Redshift is a warehouse.
+
+- id: multi-region-active-writes-1
+  pattern: multi-region-active-writes
+  qualifier: none
+  stem: >-
+    A gaming company has players in North America, Europe, and Asia. It needs a database where players in each Region
+    can read and write their profile data with single-digit millisecond latency, and the data must stay available if a
+    whole Region fails. Which solution meets these requirements?
+  clues: [read and write, single-digit millisecond, whole Region fails]
+  options:
+    - { text: "Amazon DynamoDB global tables with replicas in each Region", correct: true }
+    - { text: "Amazon RDS for MySQL with cross-Region read replicas", trap: rds-cross-region-replicas-write }
+    - { text: "Amazon ElastiCache for Redis in a single Region", trap: single-region-cache }
+    - { text: "Amazon DynamoDB in one Region with DynamoDB Accelerator (DAX)", trap: dax-single-region }
+  explain: >-
+    Global tables are multi-active, so every Region reads and writes locally and the replicas stay in sync. RDS replicas are
+    read-only, and single-Region options don't survive losing that Region.
+
+- id: dynamodb-microsecond-reads-1
+  pattern: dynamodb-microsecond-reads
+  qualifier: least-changes
+  stem: >-
+    A retail application uses Amazon DynamoDB. A small set of popular product items is read millions of times per hour,
+    and the team needs response times in microseconds with as few code changes as possible. What should a solutions
+    architect recommend?
+  clues: [DynamoDB, microseconds, few code changes]
+  options:
+    - { text: "Add DynamoDB Accelerator (DAX) in front of the table.", correct: true }
+    - { text: "Switch the table to on-demand capacity mode.", trap: on-demand-for-latency }
+    - { text: "Create a global secondary index on the product ID.", trap: gsi-for-latency }
+    - { text: "Enable DynamoDB Streams.", trap: streams-for-latency }
+  explain: >-
+    DAX is an in-memory cache built for DynamoDB that returns cached reads in microseconds through the same API.
+    Capacity mode, indexes and streams don't change read latency like that.
+
+- id: buffer-spikes-with-queue-1
+  pattern: buffer-spikes-with-queue
+  qualifier: none
+  stem: >-
+    An e-commerce site's web tier sends orders straight to a fleet of EC2 instances that process payments. During flash
+    sales, the processing instances are overwhelmed and some orders are lost. What should a solutions architect do to make
+    the system more resilient?
+  clues: [overwhelmed, orders are lost]
+  options:
+    - { text: "Put an Amazon SQS queue between the web tier and the processors, and scale the processing Auto Scaling group based on queue depth.", correct: true }
+    - { text: "Replace the processing instances with a single larger instance type.", trap: one-bigger-worker }
+    - { text: "Publish orders to an Amazon SNS topic that the processors subscribe to over HTTP.", trap: sns-push-to-workers }
+    - { text: "Add a second Application Load Balancer in front of the processing instances.", trap: second-alb-for-capacity }
+  explain: >-
+    SQS holds orders durably until a processor is ready, and scaling on queue depth adds processors as the backlog grows.
+    One bigger instance has a ceiling, SNS pushes immediately, and a load balancer adds no capacity.
+
+- id: strict-order-exactly-once-1
+  pattern: strict-order-exactly-once
+  qualifier: none
+  stem: >-
+    A banking application sends account transactions to a queue for processing. Transactions for the same account must
+    be processed in the exact order they were sent, and no transaction can be processed twice. Which service
+    configuration meets these requirements?
+  clues: [exact order, processed twice]
+  options:
+    - { text: "An Amazon SQS FIFO queue using the account ID as the message group ID", correct: true }
+    - { text: "An Amazon SQS standard queue with a long visibility timeout", trap: standard-queue-visibility }
+    - { text: "An Amazon SNS standard topic with an SQS subscription", trap: sns-standard-ordering }
+    - { text: "An Amazon SQS standard queue with long polling enabled", trap: long-polling-ordering }
+  explain: >-
+    FIFO queues keep order within each message group and remove duplicates. Standard queues and SNS standard topics can
+    deliver out of order and more than once.
+
+- id: throttle-downstream-calls-1
+  pattern: throttle-downstream-calls
+  qualifier: none
+  stem: >-
+    A Lambda function is triggered by events and calls a partner's API. The partner allows a maximum of 10 requests at a
+    time and rejects anything above that. During traffic spikes, the partner rejects many requests and the work is lost.
+    What is the MOST resilient fix?
+  clues: [maximum of 10 requests at a time, work is lost]
+  options:
+    - { text: "Send events to an Amazon SQS queue and configure the SQS event source mapping with a maximum concurrency of 10.", correct: true }
+    - { text: "Raise the function's timeout so requests wait longer for the partner.", trap: longer-timeout-for-throttling }
+    - { text: "Fan the events out to multiple Lambda functions with Amazon SNS.", trap: sns-fanout-more-calls }
+    - { text: "Increase the account's Lambda concurrency quota.", trap: raise-concurrency-quota }
+  explain: >-
+    The queue holds work durably and maximum concurrency caps parallel functions at 10. The other options leave the
+    concurrency alone or increase it.
+
+- id: cheapest-dr-long-rto-1
+  pattern: cheapest-dr-long-rto
+  qualifier: most-cost-effective
+  stem: >-
+    A company needs a disaster recovery plan for an internal reporting application. The business accepts a recovery point
+    objective (RPO) of 24 hours and a recovery time objective (RTO) of 24 hours. The company wants the lowest possible cost.
+    Which DR strategy should it choose?
+  clues: ["(RPO) of 24 hours", "(RTO) of 24 hours", lowest possible cost]
+  options:
+    - { text: "Backup and restore", correct: true }
+    - { text: "Pilot light", trap: pilot-light-overkill }
+    - { text: "Warm standby", trap: warm-standby-overkill }
+    - { text: "Multi-site active/active", trap: active-active-overkill }
+  explain: >-
+    Backup and restore only pays for stored backups, and a 24-hour RTO leaves time to rebuild. The others keep resources running to recover faster than needed.
+
+- id: multi-az-web-tier-1
+  pattern: multi-az-web-tier
+  qualifier: least-changes
+  stem: >-
+    A company's web application runs on a single EC2 instance in one Availability Zone. The company wants the
+    application to stay available if an instance or an AZ fails, with as little change to the application as possible.
+    What should a solutions architect do?
+  clues: [single EC2 instance, instance or an AZ fails]
+  options:
+    - { text: "Create an Auto Scaling group with a minimum of two instances spread across at least two AZs, behind an Application Load Balancer.", correct: true }
+    - { text: "Move to a larger instance type and enable detailed monitoring.", trap: bigger-single-instance }
+    - { text: "Take hourly EBS snapshots and copy them to another AZ.", trap: snapshots-for-availability }
+    - { text: "Launch a second instance in the same AZ inside a cluster placement group.", trap: cluster-group-same-az }
+  explain: >-
+    A multi-AZ Auto Scaling group replaces failed instances and the ALB routes only to healthy ones. The others keep a single
+    point of failure or a single AZ.
+
+- id: replace-frozen-instances-1
+  pattern: replace-frozen-instances
+  qualifier: none
+  stem: >-
+    An Auto Scaling group runs web servers behind an Application Load Balancer. Sometimes the application process freezes.
+    The ALB marks the instance unhealthy and stops sending it traffic, but the Auto Scaling group never replaces it. How can
+    a solutions architect make sure frozen instances are replaced automatically?
+  clues: [freezes, never replaces it]
+  options:
+    - { text: "Turn on Elastic Load Balancing health checks for the Auto Scaling group.", correct: true }
+    - { text: "Increase the health check grace period to 30 minutes.", trap: longer-grace-period }
+    - { text: "Turn on detailed monitoring on the instances.", trap: detailed-monitoring-heals }
+    - { text: "Add a scheduled scaling action that replaces all instances every night.", trap: nightly-instance-refresh }
+  explain: >-
+    By default the group only uses EC2 status checks, which pass while the OS runs. With ELB health checks on, instances that
+    fail the ALB check are replaced.
+
+- id: keep-cpu-at-target-1
+  pattern: keep-cpu-at-target
+  qualifier: least-overhead
+  stem: >-
+    A web application runs in an Auto Scaling group. The team wants to keep average CPU use at about 50%, adding and
+    removing instances automatically as load changes, with the least configuration effort. Which scaling policy should
+    they use?
+  clues: [average CPU, about 50%, least configuration effort]
+  options:
+    - { text: "Target tracking scaling policy with a target of 50% average CPU", correct: true }
+    - { text: "Simple scaling policy with separate CloudWatch alarms for scaling out and in", trap: simple-scaling-manual-alarms }
+    - { text: "Scheduled scaling actions every hour", trap: scheduled-for-unpredictable }
+    - { text: "Manual scaling by changing the desired capacity", trap: manual-capacity }
+  explain: >-
+    Target tracking works like a thermostat: set the target and Auto Scaling manages the alarms and capacity.
+
+- id: dns-failover-maintenance-1
+  pattern: dns-failover-maintenance
+  qualifier: none
+  stem: >-
+    A company hosts its main website in us-east-1. If the site becomes unhealthy, users must be sent automatically to a
+    static maintenance page hosted in an S3 bucket in us-west-2. Which Amazon Route 53 configuration should a solutions
+    architect use?
+  clues: [unhealthy, sent automatically]
+  options:
+    - { text: "Failover routing, with a health check on the primary record and the S3 website as the secondary record", correct: true }
+    - { text: "Weighted routing with 100% weight on the primary and 0% on the secondary", trap: weighted-zero-percent }
+    - { text: "Latency-based routing between the two Regions", trap: latency-not-health }
+    - { text: "Geolocation routing based on the user's country", trap: geolocation-not-health }
+  explain: >-
+    Failover routing uses the primary while its health check passes and switches to the secondary when it fails.
+
+- id: central-cross-service-backup-1
+  pattern: central-cross-service-backup
+  qualifier: least-overhead
+  stem: >-
+    A company uses Amazon EC2 with EBS, Amazon RDS, Amazon DynamoDB, and Amazon EFS. Compliance requires daily backups
+    kept for 35 days and copied to a second Region, managed from one place with central reporting. Which solution has the
+    least operational overhead?
+  clues: [copied to a second Region, managed from one place]
+  options:
+    - { text: "Create an AWS Backup backup plan with the schedule, retention, and cross-Region copy rule, and assign resources by tag.", correct: true }
+    - { text: "Write Lambda functions that call each service's snapshot API, run them with EventBridge, and copy snapshots across Regions.", trap: custom-snapshot-lambdas }
+    - { text: "Use Amazon Data Lifecycle Manager for all of the services.", trap: dlm-for-everything }
+    - { text: "Enable S3 Cross-Region Replication for every service's data.", trap: s3-replication-for-all }
+  explain: >-
+    AWS Backup manages backups for all these services from one plan with cross-Region copies and reports. DLM is EBS-only,
+    and custom scripts are work to build and maintain.
+
+- id: dx-with-vpn-backup-1
+  pattern: dx-with-vpn-backup
+  qualifier: most-cost-effective
+  stem: >-
+    A company connects its data center to AWS with a 10 Gbps AWS Direct Connect connection. The company needs a backup path
+    that keeps traffic encrypted if the Direct Connect link fails, and it wants to keep costs low. What should a solutions
+    architect recommend?
+  clues: [Direct Connect, backup path, encrypted, costs low]
+  options:
+    - { text: "Set up an AWS Site-to-Site VPN connection over the internet as a backup to Direct Connect.", correct: true }
+    - { text: "Order a second 10 Gbps Direct Connect connection at the same location.", trap: second-dx-same-location }
+    - { text: "Use VPC peering between the data center and the VPC.", trap: peering-to-on-prem }
+    - { text: "Use Amazon CloudFront to cache traffic between the data center and AWS.", trap: cloudfront-as-network-link }
+  explain: >-
+    A Site-to-Site VPN is cheap, encrypted with IPsec, and takes over through BGP when Direct Connect fails.
+
+- id: capture-failed-async-events-1
+  pattern: capture-failed-async-events
+  qualifier: none
+  stem: >-
+    An application invokes an AWS Lambda function asynchronously to process uploaded files. Some invocations fail after
+    all retries, and those events are lost. The team needs to capture failed events so they can be inspected and
+    reprocessed. What should a solutions architect do?
+  clues: [asynchronously, fail after all retries, reprocessed]
+  options:
+    - { text: "Configure an on-failure destination (or dead-letter queue) for the function that sends failed events to an Amazon SQS queue.", correct: true }
+    - { text: "Increase the function's timeout to the maximum of 15 minutes.", trap: max-timeout-for-failures }
+    - { text: "Increase the function's memory to 10 GB.", trap: more-memory-for-failures }
+    - { text: "Enable AWS X-Ray tracing on the function.", trap: xray-keeps-events }
+  explain: >-
+    For async invocations, events that fail every retry can go to an on-failure destination or DLQ for inspection and replay.
+
+- id: predictable-cold-starts-1
+  pattern: predictable-cold-starts
+  qualifier: lowest-latency
+  stem: >-
+    A company's API runs on AWS Lambda. Every weekday at 9:00 AM traffic jumps sharply, and users see slow responses for
+    the first few seconds because of cold starts. The company wants consistent low latency during this predictable spike.
+    What should a solutions architect do?
+  clues: [cold starts, predictable spike]
+  options:
+    - { text: "Configure provisioned concurrency for the function, scaled up on a schedule before 9:00 AM with Application Auto Scaling.", correct: true }
+    - { text: "Increase the function's timeout.", trap: timeout-for-cold-start }
+    - { text: "Configure reserved concurrency equal to the expected peak.", trap: reserved-not-warm }
+    - { text: "Move the function's code into a Lambda layer.", trap: layers-for-cold-start }
+  explain: >-
+    Provisioned concurrency keeps environments initialized, so requests skip cold starts. Scheduling it saves money outside the spike.
+
+- id: recover-same-instance-1
+  pattern: recover-same-instance
+  qualifier: none
+  stem: >-
+    A legacy application runs on one EC2 instance and cannot be put behind a load balancer. If the underlying AWS hardware
+    fails, the instance must be recovered automatically with the same instance ID, private IP address, and EBS volumes.
+    What should a solutions architect do?
+  clues: [cannot be put behind a load balancer, same instance ID, private IP address]
+  options:
+    - { text: "Create an Amazon CloudWatch alarm on the StatusCheckFailed_System metric with the EC2 recover action.", correct: true }
+    - { text: "Put the instance in an Auto Scaling group with a minimum and maximum of 1.", trap: asg-of-one-new-id }
+    - { text: "Create a CloudWatch alarm on StatusCheckFailed_Instance that terminates the instance.", trap: terminate-on-instance-check }
+    - { text: "Schedule daily EBS snapshots with Amazon Data Lifecycle Manager.", trap: snapshots-for-recovery }
+  explain: >-
+    The recover action moves the instance to new hardware, keeping its ID, IPs and EBS volumes. An Auto Scaling group creates a new instance with a new ID.

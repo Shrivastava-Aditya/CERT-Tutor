@@ -1,0 +1,41 @@
+id: lambda-resilience
+domain: resilient
+title: AWS Lambda invocation and concurrency
+summary: How Lambda retries, where failed events go, and how concurrency settings protect performance and downstream systems.
+icon: aws:lambda
+
+teach: |
+  - **Synchronous invocation** (API Gateway, SDK call): the caller waits and handles errors itself.
+  - **Asynchronous invocation** (S3 events, SNS, EventBridge): Lambda queues the event and **retries twice**. After that it sends the event to an **on-failure destination** or a **dead-letter queue** (SQS or SNS), so it isn't lost.
+  - **Event source mapping** (SQS, Kinesis, DynamoDB Streams): Lambda polls the source. For SQS, set **maximum concurrency** to cap parallel functions.
+  - **Reserved concurrency:** guarantees capacity for a function *and* caps it.
+  - **Provisioned concurrency:** keeps environments **initialized and warm**, removing **cold starts**. Schedule it with Application Auto Scaling for predictable spikes.
+  - Limits to know: 15-minute timeout, up to 10 GB memory (CPU scales with memory).
+
+under_the_hood: |
+  A cold start is Lambda creating a new execution environment: download the code, start the runtime, run your init code.
+  Warm environments are reused for later requests. Provisioned concurrency pays to keep a set number warm all the time.
+
+  Asynchronous events sit in an internal queue. Retries wait between attempts, and events older than the maximum event age
+  (up to 6 hours) are dropped unless you configure a destination.
+
+observe:
+  - text: "Set an on-failure destination for async invocations:"
+    cmd: "aws lambda put-function-event-invoke-config --function-name resize --destination-config '{\"OnFailure\":{\"Destination\":\"arn:aws:sqs:us-east-1:123456789012:resize-failures\"}}'"
+  - text: "Spot cold starts in the logs: look for the `Init Duration` field in REPORT lines."
+    cmd: "aws logs filter-log-events --log-group-name /aws/lambda/api --filter-pattern '\"Init Duration\"'"
+
+case_study: |
+  An image-processing function triggered by S3 occasionally failed on corrupt files, and those events vanished after the retries.
+  The team added an SQS on-failure destination with an alarm on its depth. Now every failed event is kept, inspected and replayed
+  once the bug is fixed.
+
+other_clouds:
+  azure: "Azure Functions (retry policies, Premium plan pre-warmed instances)"
+  gcp: "Cloud Run functions (retries, minimum instances to avoid cold starts)"
+
+links:
+  - { title: Asynchronous invocation, url: "https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html" }
+  - { title: Configuring provisioned concurrency, url: "https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html" }
+
+related: [sqs-decoupling, dynamodb, streaming-kinesis]

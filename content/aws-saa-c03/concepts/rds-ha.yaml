@@ -1,0 +1,45 @@
+id: rds-ha
+domain: resilient
+title: RDS Multi-AZ and read replicas
+summary: Multi-AZ is for surviving failures. Read replicas are for spreading read load. The exam tests whether you know which is which.
+icon: aws:rds
+
+teach: |
+  | | Multi-AZ (instance) | Read replica |
+  |---|---|---|
+  | Purpose | **High availability** | **Read scaling** (plus DR when cross-Region) |
+  | Replication | **Synchronous** to a standby | **Asynchronous** |
+  | Failover | **Automatic**, same DNS endpoint | **Manual promotion** |
+  | Can serve reads? | No: the standby is passive | Yes, with its own endpoint |
+  | Location | Another AZ in the same Region | Same AZ, another AZ, or **another Region** |
+
+  - A **Multi-AZ DB cluster** (MySQL and PostgreSQL) is a newer option: one writer and **two readable standbys** in different AZs, with faster failover.
+  - Reporting queries slowing production down → a **read replica**, with the reports pointed at its endpoint.
+
+under_the_hood: |
+  With Multi-AZ, every write is committed on the primary *and* the standby before it's acknowledged, so a failover loses no
+  committed transactions. On failure, RDS flips the endpoint's DNS record to the standby, typically within 1–2 minutes.
+  Apps reconnect to the same hostname.
+
+  Read replicas replay the primary's changes after they happen, so they can lag behind by seconds or more.
+
+observe:
+  - text: "Check whether an instance is Multi-AZ and list its replicas:"
+    cmd: "aws rds describe-db-instances --db-instance-identifier orders --query 'DBInstances[].[MultiAZ,ReadReplicaDBInstanceIdentifiers]'"
+  - text: "Force a failover to see it in action:"
+    cmd: "aws rds reboot-db-instance --db-instance-identifier orders --force-failover"
+
+case_study: |
+  An online shop's MySQL database sat in one AZ, and the morning sales reports made checkout slow. They enabled Multi-AZ for
+  automatic failover and added a read replica just for reporting. An AZ outage later failed over in about a minute, with no
+  code change, and checkout no longer slows down during reports.
+
+other_clouds:
+  azure: "Zone-redundant high availability for Azure Database for MySQL/PostgreSQL, plus read replicas"
+  gcp: "Cloud SQL high availability (regional instances) and read replicas"
+
+links:
+  - { title: Multi-AZ DB instance deployments, url: "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZSingleStandby.html" }
+  - { title: Working with read replicas, url: "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ReadRepl.html" }
+
+related: [aurora, dr-strategies, elasticache]

@@ -1,0 +1,39 @@
+id: ec2-auto-recovery
+domain: resilient
+title: EC2 status checks and instance recovery
+summary: Recover a single instance on new hardware while keeping its ID, IP addresses and volumes.
+icon: aws:ec2
+
+teach: |
+  - **System status check:** a problem with AWS's hardware or network underneath the instance.
+  - **Instance status check:** a problem inside your instance (OS won't boot, out of memory, bad network config).
+  - **Recover action:** a CloudWatch alarm on **`StatusCheckFailed_System`** can **recover** the instance. It moves to new hardware and keeps:
+    - the **instance ID**;
+    - its **private and Elastic IP addresses**;
+    - its **EBS volumes** and metadata.
+  - Many current instance types have **automatic recovery** turned on by default.
+  - Compare: an **Auto Scaling group** replaces a failed instance with a *new* one, with a new ID and IP. That's fine for stateless fleets, but not for a legacy single server.
+  - Instance store data is lost on recovery, because it lives on the old hardware.
+
+under_the_hood: |
+  Recovery is essentially a stop and start onto a different physical host, done for you. Because EBS volumes are network-attached
+  they simply reattach, and the network interface (with its IPs) moves along with the instance.
+
+observe:
+  - text: "See both status checks for an instance:"
+    cmd: "aws ec2 describe-instance-status --instance-ids i-0123456789abcdef0 --query 'InstanceStatuses[].[SystemStatus.Status,InstanceStatus.Status]'"
+  - text: "Your homelab has no 'recover onto new hardware' button. If the motherboard dies, you rebuild. Recovery is that rebuild, automated."
+
+case_study: |
+  A licensing server tied to its IP address and instance ID can't sit behind a load balancer. The team adds a CloudWatch alarm on
+  `StatusCheckFailed_System` with the recover action. When the underlying host later fails, the server comes back on new hardware
+  in minutes with the same IP, and the licenses keep working.
+
+other_clouds:
+  azure: "Azure VM service healing (automatic redeploy to healthy hosts)"
+  gcp: "Compute Engine automatic restart and live migration"
+
+links:
+  - { title: Recover your instance, url: "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-recover.html" }
+
+related: [auto-scaling, ec2-placement-groups]

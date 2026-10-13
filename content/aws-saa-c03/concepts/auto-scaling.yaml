@@ -1,0 +1,43 @@
+id: auto-scaling
+domain: resilient
+title: EC2 Auto Scaling
+summary: Keeps the right number of healthy instances running across AZs, replacing failures and following load.
+icon: aws:auto-scaling
+
+teach: |
+  - An **Auto Scaling group (ASG)** keeps between *min* and *max* instances, aiming for *desired*, built from a **launch template**.
+  - Spread it across **at least two AZs** behind a load balancer. If an instance or a whole AZ fails, the group replaces capacity elsewhere.
+  - **Health checks:** EC2 status checks by default. Turn on **ELB health checks** so an instance whose app has frozen (but whose OS is fine) gets replaced too.
+  - **Scaling policies:**
+    - **Target tracking:** "keep average CPU at 50%". The simplest, like a thermostat.
+    - **Step / simple scaling:** your own CloudWatch alarms and step sizes.
+    - **Scheduled:** for known patterns ("10 instances at 9 AM").
+    - **Predictive:** forecasts daily patterns from history.
+  - **Mixed instances policy:** blend On-Demand and **Spot** across several instance types.
+
+under_the_hood: |
+  Every few seconds the group compares what's running with what it should have. An unhealthy instance is terminated and a new
+  one launched from the template. That's why instances should be **stateless**: anything kept on one instance disappears with it.
+
+  Target tracking creates and manages the CloudWatch alarms for you. It scales out quickly and in slowly, to avoid flapping.
+
+observe:
+  - text: "See instances, their AZ and health:"
+    cmd: "aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names web --query 'AutoScalingGroups[].Instances[].[InstanceId,AvailabilityZone,HealthStatus]'"
+  - text: "Turn on ELB health checks for a group:"
+    cmd: "aws autoscaling update-auto-scaling-group --auto-scaling-group-name web --health-check-type ELB --health-check-grace-period 120"
+
+case_study: |
+  A marketing site ran on one large instance and went down for an afternoon when its AZ had problems. The team moved to an ASG of
+  two to eight small instances across three AZs behind an ALB, with ELB health checks and target tracking at 50% CPU. It now rides out
+  instance failures and traffic spikes without anyone being paged.
+
+other_clouds:
+  azure: "Virtual Machine Scale Sets with autoscale rules"
+  gcp: "Managed instance groups (regional) with autoscaling"
+
+links:
+  - { title: "What is Amazon EC2 Auto Scaling?", url: "https://docs.aws.amazon.com/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html" }
+  - { title: Target tracking scaling policies, url: "https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html" }
+
+related: [load-balancers, sqs-decoupling, ec2-purchasing-options]

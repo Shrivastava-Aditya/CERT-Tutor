@@ -1,0 +1,43 @@
+id: dr-strategies
+domain: resilient
+title: Disaster recovery strategies
+summary: Four strategies, from cheap and slow to expensive and instant. Match the RPO and RTO to the cheapest one that fits.
+icon: aws:elastic-dr
+
+teach: |
+  - **RPO (recovery point objective):** how much data you can afford to lose, measured in time.
+  - **RTO (recovery time objective):** how long you can afford to be down.
+
+  | Strategy | What runs in the DR Region | RPO / RTO | Cost |
+  |---|---|---|---|
+  | **Backup and restore** | Nothing, just backups | Hours / hours | $ |
+  | **Pilot light** | Core data replicated, servers off or minimal | Minutes / tens of minutes | $$ |
+  | **Warm standby** | A scaled-down but working copy | Seconds to minutes / minutes | $$$ |
+  | **Multi-site active/active** | Full production in two or more Regions | Near zero / near zero | $$$$ |
+
+  - Exam rule: pick the **cheapest** strategy that still meets the stated RPO and RTO.
+  - **AWS Elastic Disaster Recovery** continuously replicates servers and launches them in AWS when needed.
+
+under_the_hood: |
+  The strategies differ in how much is already running when disaster hits. Backup and restore has to build everything:
+  networks, servers, then restore data. Pilot light has the data live but must start the servers. Warm standby only has to scale up.
+  Active/active just shifts traffic. Every step up shortens recovery and raises the monthly bill.
+
+observe:
+  - text: "Your homelab today is 'backup and restore' at best: if the NVMe died, you'd reinstall and copy data back from the Ultra Touch. Your RPO is the time since your last copy."
+  - text: "Copy a backup to another Region (the heart of backup and restore):"
+    cmd: "aws backup start-copy-job --recovery-point-arn $RP_ARN --source-backup-vault-name main --destination-backup-vault-arn $DR_VAULT_ARN --iam-role-arn $ROLE_ARN"
+
+case_study: |
+  An internal reporting tool can be down for a day and lose a day of data, so its RPO and RTO are both 24 hours. The team keeps nightly
+  backups copied to a second Region and a tested runbook to rebuild from them. It costs almost nothing and meets the target. Their
+  payments system, with a 1-minute RTO, gets a warm standby instead.
+
+other_clouds:
+  azure: "Azure Site Recovery and Azure Backup"
+  gcp: "Backup and DR Service; DR architecture patterns in the Cloud Architecture Center"
+
+links:
+  - { title: Disaster recovery options in the cloud, url: "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html" }
+
+related: [aws-backup, aurora, route53-routing]

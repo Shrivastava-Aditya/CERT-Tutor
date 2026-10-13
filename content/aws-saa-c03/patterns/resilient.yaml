@@ -1,0 +1,172 @@
+# Patterns for the Resilient domain (26%), plus questions on these concepts from other domains
+
+- id: rds-survive-az-failure
+  concept: rds-ha
+  clues: [single Availability Zone, automatically, no data loss]
+  rule: "RDS must survive an AZ failure automatically with no committed-data loss → Multi-AZ"
+  traps:
+    - { id: replica-same-az-for-ha, option: Read replica in the same AZ, why: "Asynchronous, manual promotion, and still in the same AZ." }
+    - { id: frequent-snapshots-for-ha, option: Frequent snapshots + restore, why: "Manual recovery that loses recent writes." }
+    - { id: bigger-instance-for-ha, option: Larger instance class, why: "Still one instance in one AZ." }
+
+- id: offload-reporting-reads
+  concept: rds-ha
+  clues: [reporting queries, slow down the production workload]
+  rule: "Read-heavy reporting slowing the primary → RDS read replica for the reports"
+  traps:
+    - { id: read-from-multi-az-standby, option: Run reports on the Multi-AZ standby, why: "A standard Multi-AZ instance standby can't serve reads." }
+    - { id: more-storage-for-cpu, option: Increase allocated storage, why: "Doesn't relieve CPU and memory pressure from the queries." }
+    - { id: rewrite-to-dynamodb, option: Move to DynamoDB, why: "A major rewrite, not a minimal change." }
+
+- id: global-relational-dr
+  concept: aurora
+  clues: [cross-Region, RPO of about 1 second, RTO of about 1 minute]
+  rule: "Relational DB, cross-Region DR with ~1 s RPO and ~1 min RTO, local reads → Aurora Global Database"
+  traps:
+    - { id: multi-az-for-region-dr, option: RDS Multi-AZ, why: "Protects against AZ failure in one Region only." }
+    - { id: hourly-snapshot-copies, option: Hourly snapshot copies, why: "RPO of up to an hour." }
+    - { id: global-tables-not-relational, option: DynamoDB global tables, why: "Not a relational database." }
+
+- id: spiky-relational-serverless
+  concept: aurora
+  clues: [idle most of the day, unpredictable bursts]
+  rule: "Relational DB, idle most of the time with sudden bursts → Aurora Serverless v2"
+  traps:
+    - { id: big-provisioned-db, option: Large provisioned RDS instance, why: "Pays for peak capacity all day." }
+    - { id: reserved-idle-db, option: Reserved RDS instance, why: "A discount on capacity that sits idle." }
+    - { id: redshift-for-oltp, option: Amazon Redshift, why: "A data warehouse, not a transactional database." }
+
+- id: multi-region-active-writes
+  concept: dynamodb
+  clues: [read and write, single-digit millisecond, whole Region fails]
+  rule: "Local reads and writes in several Regions, surviving a Region loss → DynamoDB global tables"
+  traps:
+    - { id: rds-cross-region-replicas-write, option: RDS cross-Region read replicas, why: "Replicas are read-only, so writes still go to one Region." }
+    - { id: single-region-cache, option: ElastiCache in one Region, why: "One Region, and a cache isn't the system of record." }
+    - { id: dax-single-region, option: DynamoDB + DAX in one Region, why: "Faster reads, but no local writes elsewhere and no Region failover." }
+
+- id: dynamodb-microsecond-reads
+  concept: dynamodb
+  clues: [DynamoDB, microseconds, few code changes]
+  rule: "Microsecond reads on a DynamoDB table with minimal code change → DAX"
+  traps:
+    - { id: on-demand-for-latency, option: On-demand capacity mode, why: "Changes how capacity is billed, not latency." }
+    - { id: gsi-for-latency, option: Global secondary index, why: "Adds a query pattern. It isn't a cache." }
+    - { id: streams-for-latency, option: DynamoDB Streams, why: "Captures item changes for other consumers." }
+
+- id: buffer-spikes-with-queue
+  concept: sqs-decoupling
+  clues: [overwhelmed, orders are lost]
+  rule: "A spike overwhelms workers and work is lost → SQS queue in between, scale workers on queue depth"
+  traps:
+    - { id: one-bigger-worker, option: One larger instance, why: "Still a single point of failure with a fixed ceiling." }
+    - { id: sns-push-to-workers, option: SNS push to workers, why: "Pushes immediately and doesn't hold work until consumers are ready." }
+    - { id: second-alb-for-capacity, option: Another load balancer, why: "Adds no processing capacity." }
+
+- id: strict-order-exactly-once
+  concept: sqs-decoupling
+  clues: [exact order, processed twice]
+  rule: "Strict ordering plus no duplicate processing → SQS FIFO (message group per key)"
+  traps:
+    - { id: standard-queue-visibility, option: Standard queue + long visibility timeout, why: "Standard queues deliver at least once and out of order." }
+    - { id: sns-standard-ordering, option: SNS standard topic, why: "No ordering or deduplication guarantees." }
+    - { id: long-polling-ordering, option: Standard queue + long polling, why: "Long polling reduces empty receives. Ordering is unchanged." }
+
+- id: throttle-downstream-calls
+  concept: sqs-decoupling
+  clues: [maximum of 10 requests at a time, work is lost]
+  rule: "Protect a fragile downstream with a concurrency limit → SQS + Lambda event source with maximum concurrency"
+  traps:
+    - { id: longer-timeout-for-throttling, option: Longer Lambda timeout, why: "Doesn't reduce how many calls run at once." }
+    - { id: sns-fanout-more-calls, option: SNS fan-out to more functions, why: "Increases parallel calls, which makes it worse." }
+    - { id: raise-concurrency-quota, option: Higher concurrency quota, why: "More parallel calls, which is the opposite of what's needed." }
+
+- id: cheapest-dr-long-rto
+  concept: dr-strategies
+  clues: ["(RPO) of 24 hours", "(RTO) of 24 hours", lowest possible cost]
+  rule: "Hours of RPO and RTO acceptable, lowest cost → backup and restore"
+  traps:
+    - { id: pilot-light-overkill, option: Pilot light, why: "Keeps core systems running for faster recovery than needed." }
+    - { id: warm-standby-overkill, option: Warm standby, why: "Pays for a running copy the RTO doesn't require." }
+    - { id: active-active-overkill, option: Multi-site active/active, why: "The most expensive option for the least demanding target." }
+
+- id: multi-az-web-tier
+  concept: auto-scaling
+  clues: [single EC2 instance, instance or an AZ fails]
+  rule: "Survive instance and AZ failure → Auto Scaling group across two or more AZs behind a load balancer"
+  traps:
+    - { id: bigger-single-instance, option: Larger instance + detailed monitoring, why: "Still one instance in one AZ." }
+    - { id: snapshots-for-availability, option: Hourly EBS snapshots, why: "Manual recovery, not availability." }
+    - { id: cluster-group-same-az, option: Second instance in a cluster placement group, why: "Packs instances into one AZ, the opposite of what's needed." }
+
+- id: replace-frozen-instances
+  concept: auto-scaling
+  clues: [freezes, never replaces it]
+  rule: "The load balancer sees a frozen app but the ASG doesn't replace it → turn on ELB health checks for the group"
+  traps:
+    - { id: longer-grace-period, option: Longer health check grace period, why: "Only delays the checks." }
+    - { id: detailed-monitoring-heals, option: Detailed monitoring, why: "Collects metrics more often. It doesn't replace instances." }
+    - { id: nightly-instance-refresh, option: Replace all instances nightly, why: "Frozen instances keep failing for hours." }
+
+- id: keep-cpu-at-target
+  concept: auto-scaling
+  clues: [average CPU, about 50%, least configuration effort]
+  rule: "Hold a metric at a target value with the least effort → target tracking scaling"
+  traps:
+    - { id: simple-scaling-manual-alarms, option: Simple scaling with your own alarms, why: "You create and tune the alarms and step sizes yourself." }
+    - { id: scheduled-for-unpredictable, option: Scheduled scaling, why: "Can't react to unexpected load." }
+    - { id: manual-capacity, option: Manual desired capacity, why: "Not automatic." }
+
+- id: dns-failover-maintenance
+  concept: route53-routing
+  clues: [unhealthy, sent automatically]
+  rule: "Automatically send users to a backup when the primary is unhealthy → Route 53 failover routing + health check"
+  traps:
+    - { id: weighted-zero-percent, option: Weighted 100/0, why: "Fixed percentages, not health-driven active/passive." }
+    - { id: latency-not-health, option: Latency-based routing, why: "Picks the fastest Region, not the healthy one." }
+    - { id: geolocation-not-health, option: Geolocation routing, why: "Picks by user location." }
+
+- id: central-cross-service-backup
+  concept: aws-backup
+  clues: [copied to a second Region, managed from one place]
+  rule: "Backups across many services, retention and cross-Region copies, from one place → AWS Backup plan"
+  traps:
+    - { id: custom-snapshot-lambdas, option: Custom Lambda snapshot scripts, why: "Works, but you build and maintain it all." }
+    - { id: dlm-for-everything, option: Data Lifecycle Manager, why: "Handles EBS snapshots and EBS-backed AMIs only." }
+    - { id: s3-replication-for-all, option: S3 Cross-Region Replication, why: "Only copies S3 objects." }
+
+- id: dx-with-vpn-backup
+  concept: hybrid-connectivity
+  clues: [Direct Connect, backup path, encrypted, costs low]
+  rule: "Cheap encrypted backup for Direct Connect → Site-to-Site VPN with BGP failover"
+  traps:
+    - { id: second-dx-same-location, option: Second Direct Connect at the same location, why: "More resilient but much more expensive, and not encrypted by itself." }
+    - { id: peering-to-on-prem, option: VPC peering, why: "Connects VPCs, not on-premises networks." }
+    - { id: cloudfront-as-network-link, option: CloudFront, why: "A content delivery network, not a network link." }
+
+- id: capture-failed-async-events
+  concept: lambda-resilience
+  clues: [asynchronously, fail after all retries, reprocessed]
+  rule: "Keep async Lambda events that fail every retry → on-failure destination or DLQ (SQS)"
+  traps:
+    - { id: max-timeout-for-failures, option: Maximum timeout, why: "Failed events would still be lost." }
+    - { id: more-memory-for-failures, option: More memory, why: "Might reduce some failures, but doesn't keep failed events." }
+    - { id: xray-keeps-events, option: X-Ray tracing, why: "Traces requests. It doesn't keep events." }
+
+- id: predictable-cold-starts
+  concept: lambda-resilience
+  clues: [cold starts, predictable spike]
+  rule: "Predictable spike + cold-start latency → provisioned concurrency, scheduled ahead of the spike"
+  traps:
+    - { id: timeout-for-cold-start, option: Longer timeout, why: "Controls how long a function may run, not start-up time." }
+    - { id: reserved-not-warm, option: Reserved concurrency, why: "Guarantees capacity but doesn't keep environments warm." }
+    - { id: layers-for-cold-start, option: Lambda layers, why: "A way to package code. It doesn't affect cold starts." }
+
+- id: recover-same-instance
+  concept: ec2-auto-recovery
+  clues: [same instance ID, private IP address, cannot be put behind a load balancer]
+  rule: "Recover one instance on new hardware keeping its ID and IP → CloudWatch alarm on StatusCheckFailed_System with the recover action"
+  traps:
+    - { id: asg-of-one-new-id, option: Auto Scaling group of one, why: "Replaces it with a new instance with a new ID." }
+    - { id: terminate-on-instance-check, option: Alarm that terminates the instance, why: "The opposite of recovering it." }
+    - { id: snapshots-for-recovery, option: Daily snapshots, why: "Manual restore, new instance." }

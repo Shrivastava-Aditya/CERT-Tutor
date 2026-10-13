@@ -1,0 +1,37 @@
+id: aws-backup
+domain: resilient
+title: AWS Backup
+summary: One place to schedule, retain, copy and report on backups across AWS services.
+icon: aws:backup
+
+teach: |
+  - **Backup plans** set the schedule, retention, lifecycle to cold storage, and **cross-Region or cross-account copies**.
+  - Assign resources **by tag** (`backup=daily`), and new resources with the tag are covered automatically.
+  - Supports EC2/EBS, RDS and Aurora, DynamoDB, EFS, FSx, S3, Storage Gateway, DocumentDB, Neptune and more.
+  - **Backup Vault Lock** makes backups immutable (WORM), even for administrators, which protects against ransomware.
+  - **Audit Manager** reports whether backups meet your compliance rules.
+  - Compare: **Data Lifecycle Manager** only handles **EBS snapshots and EBS-backed AMIs**.
+
+under_the_hood: |
+  AWS Backup drives each service's native snapshot or backup feature (EBS snapshots, RDS snapshots, DynamoDB backups) from one
+  policy engine, and stores the results as recovery points in a backup vault encrypted with KMS. Cross-Region copies are
+  separate recovery points in another vault, so losing the source Region doesn't touch them.
+
+observe:
+  - text: "List recovery points in a vault:"
+    cmd: "aws backup list-recovery-points-by-backup-vault --backup-vault-name main --query 'RecoveryPoints[].[ResourceType,CreationDate,Status]'"
+  - text: "Copying your homelab data to the Ultra Touch on a schedule, with old copies pruned, is a backup plan. AWS Backup does that across every service at once."
+
+case_study: |
+  A company with EC2, RDS, DynamoDB and EFS had five different backup scripts, and two of them had silently stopped. They replaced
+  them with one AWS Backup plan: daily backups, 35-day retention, copies to a second Region, and resources selected by tag.
+  The monthly compliance report now comes from Backup Audit Manager.
+
+other_clouds:
+  azure: "Azure Backup with Recovery Services and Backup vaults"
+  gcp: "Backup and DR Service"
+
+links:
+  - { title: "What is AWS Backup?", url: "https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html" }
+
+related: [dr-strategies, ebs-volume-types, s3-data-protection]

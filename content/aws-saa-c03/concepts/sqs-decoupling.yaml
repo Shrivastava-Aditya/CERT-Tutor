@@ -1,0 +1,42 @@
+id: sqs-decoupling
+domain: resilient
+title: Decoupling with SQS and SNS
+summary: Put a queue between producers and consumers so spikes are buffered instead of lost.
+icon: aws:sqs
+
+teach: |
+  - **SQS (queue):** producers send messages, consumers *pull* them when ready. Messages wait (up to 14 days) until they're processed and deleted.
+    - **Standard queue:** nearly unlimited throughput, **at-least-once** delivery, best-effort order.
+    - **FIFO queue:** **strict order within a message group** and **exactly-once processing** (duplicates removed).
+    - **Dead-letter queue (DLQ):** messages that keep failing move aside for inspection.
+    - Scale the consumer Auto Scaling group on **queue depth** (`ApproximateNumberOfMessagesVisible`).
+  - **SNS (topic):** *pushes* each message to every subscriber at once (SQS queues, Lambda, HTTP, email). It doesn't store messages for later.
+  - **Fan-out:** SNS topic → several SQS queues, so each consumer gets its own durable copy.
+  - **Lambda + SQS:** the event source mapping's **maximum concurrency** caps how many functions run at once, which protects a fragile downstream.
+
+under_the_hood: |
+  When a consumer receives a message, it's hidden for the **visibility timeout**. If the consumer deletes it in time, it's gone.
+  If the consumer crashes, the message reappears and someone else retries it. That's where at-least-once comes from, and
+  why consumers should be idempotent: processing the same message twice must be safe.
+
+  FIFO removes duplicates using a deduplication ID within a 5-minute window, and orders messages by message group ID.
+
+observe:
+  - text: "Watch a queue's backlog grow and shrink:"
+    cmd: "aws sqs get-queue-attributes --queue-url $QUEUE_URL --attribute-names ApproximateNumberOfMessagesVisible"
+  - text: "Your homelab monitor plan has an agent sending readings to a collector. If the collector restarts, readings are lost unless something buffers them. That buffer is what a queue gives you."
+
+case_study: |
+  During a flash sale, an e-commerce site's payment workers fell over and orders vanished. The team put an SQS queue between the
+  website and the workers, and scaled the workers on queue depth. The next sale queued 40,000 orders in a burst, and the workers
+  drained them within minutes without losing one.
+
+other_clouds:
+  azure: "Azure Service Bus (queues, topics, sessions for ordering) and Queue Storage"
+  gcp: "Pub/Sub (with ordering keys and dead-letter topics) and Cloud Tasks"
+
+links:
+  - { title: "What is Amazon SQS?", url: "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html" }
+  - { title: FIFO queues, url: "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-fifo-queues.html" }
+
+related: [lambda-resilience, auto-scaling, streaming-kinesis]
