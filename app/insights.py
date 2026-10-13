@@ -77,3 +77,67 @@ def analyse(course: Course, answers: list[dict]) -> dict:
         "domains": domains, "patterns": patterns, "weak": weak, "traps": traps,
         "qualifiers": qualifiers, "avg_seconds": avg_seconds, "slow": slow, "mastery": mastery,
     }
+
+
+def answer_log(course: Course, answers: list[dict], shown: dict[str, dict[str, dict]]) -> list[dict]:
+    """Every answer you've given, newest first, with the question text, your pick, the right answer and the time taken."""
+    domain_names = {d["id"]: d["name"] for d in course.cert["domains"]}
+    log = []
+    for a in reversed(answers):
+        q = shown.get(a["attempt_id"], {}).get(a["question_id"])
+        if q is None:
+            continue
+        picked = [o for o in q["options"] if o["id"] in a["chosen"]]
+        concept = course.concepts.get(a["concept"], {})
+        log.append({
+            "attempt_id": a["attempt_id"], "question_id": a["question_id"], "when": a["answered_at"],
+            "stem": q["stem"], "rule": q.get("rule", ""), "source": a["source"],
+            "concept": a["concept"], "concept_title": concept.get("title", a["concept"]),
+            "domain": a["domain"], "domain_name": domain_names.get(a["domain"], a["domain"]),
+            "correct": bool(a["correct"]), "seconds": round(a["seconds"]) if a["seconds"] else None, "flagged": bool(a["flagged"]),
+            "picked": [o["text"] for o in picked],
+            "right": [o["text"] for o in q["options"] if o["correct"]],
+            "trap_why": next((o.get("trap_why") for o in picked if not o["correct"] and o.get("trap_why")), None),
+        })
+    return log
+
+
+def by_module(course: Course, log: list[dict]) -> list[dict]:
+    """Domains in exam order, each with its concepts: accuracy, time, and the questions you got wrong."""
+    out = []
+    for d in course.cert["domains"]:
+        concepts = []
+        for cid, c in course.concepts.items():
+            if c["domain"] != d["id"]:
+                continue
+            rows = [r for r in log if r["concept"] == cid]
+            if not rows:
+                continue
+            timed = [r["seconds"] for r in rows if r["seconds"]]
+            right = sum(r["correct"] for r in rows)
+            concepts.append({
+                "id": cid, "title": c["title"], "answered": len(rows), "correct": right, "pct": _pct(right, len(rows)),
+                "avg_seconds": round(sum(timed) / len(timed)) if timed else None,
+                "wrong": [r for r in rows if not r["correct"]],
+            })
+        concepts.sort(key=lambda c: (c["pct"], -c["answered"]))
+        rows = [r for r in log if r["domain"] == d["id"]]
+        right = sum(r["correct"] for r in rows)
+        timed = [r["seconds"] for r in rows if r["seconds"]]
+        out.append({**d, "concepts": concepts, "answered": len(rows), "correct": right, "pct": _pct(right, len(rows)),
+                    "avg_seconds": round(sum(timed) / len(timed)) if timed else None})
+    return out
+
+
+def time_stats(log: list[dict]) -> dict:
+    timed = [r for r in log if r["seconds"]]
+    total = sum(r["seconds"] for r in timed)
+    right = [r["seconds"] for r in timed if r["correct"]]
+    wrong = [r["seconds"] for r in timed if not r["correct"]]
+    avg = lambda xs: round(sum(xs) / len(xs)) if xs else None
+    return {
+        "total_seconds": total, "avg": avg([r["seconds"] for r in timed]),
+        "avg_right": avg(right), "avg_wrong": avg(wrong),
+        "slowest": sorted(timed, key=lambda r: r["seconds"], reverse=True)[:8],
+        "over_limit": sum(1 for r in timed if r["seconds"] > SLOW_SECONDS),
+    }

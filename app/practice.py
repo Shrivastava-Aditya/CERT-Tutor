@@ -214,12 +214,17 @@ def insights_page(request: Request, course_id: str):
     course, error = course_or_error_page(request, course_id)
     if error:
         return error
+    answers = db.course_answers(course_id)
+    log = insights.answer_log(course, answers, db.attempt_questions(course_id))
     return render(request, "insights.html", {
+        "log": log,
+        "modules": insights.by_module(course, log),
+        "timing": insights.time_stats(log),
         "title": f"Insights · {course.cert['code']}",
         "page": "insights",
         "course_id": course_id,
         "cert": course.cert,
-        "analysis": insights.analyse(course, db.course_answers(course_id)),
+        "analysis": insights.analyse(course, answers),
         "attempts": db.recent_attempts(course_id, 20),
         "tutor_usage": db.tutor_usage_summary(course_id),
         "fmt_time": db.fmt_time,

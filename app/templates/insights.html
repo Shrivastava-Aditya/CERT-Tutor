@@ -22,6 +22,15 @@
     <div><b>{{ analysis.avg_seconds }}s</b><span>average per question{% if analysis.slow %} · {{ analysis.slow }} over 2.5 min{% endif %}</span></div>
   </div>
 
+  <div class="insight-tabs" data-tabs>
+    <div class="tablist" role="tablist" aria-label="Insight views">
+      <button role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
+      <button role="tab" id="tab-modules" data-tab="modules" aria-controls="panel-modules" aria-selected="false">By module</button>
+      <button role="tab" id="tab-answers" data-tab="answers" aria-controls="panel-answers" aria-selected="false">Every answer <span class="tab-count">{{ log | length }}</span></button>
+      <button role="tab" id="tab-time" data-tab="time" aria-controls="panel-time" aria-selected="false">Time</button>
+    </div>
+
+    <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" class="tabpanel insight-panel">
   <div class="results-grid">
     <section class="panel">
       <h2>By domain</h2>
@@ -106,6 +115,139 @@
     </div>
   </section>
   {% endif %}
+    </section>
+
+    <section role="tabpanel" id="panel-modules" aria-labelledby="tab-modules" class="tabpanel insight-panel">
+      <p class="note">Every domain and the concepts (modules) in it that you've answered, weakest first. Open a module to see the questions you got wrong there.</p>
+      {% for d in modules if d.answered %}
+      <div class="panel module-domain dom-{{ d.id }}">
+        <div class="module-head">
+          <h2>{{ d.name }}</h2>
+          <span class="pct-pill {{ 'good' if d.pct >= 70 else 'bad' }}">{{ d.correct }}/{{ d.answered }} · {{ d.pct }}%</span>
+          {% if d.avg_seconds %}<span class="secs">avg {{ d.avg_seconds }}s</span>{% endif %}
+        </div>
+        {% for c in d.concepts %}
+        <details class="module"{% if c.wrong and loop.first %} open{% endif %}>
+          <summary>
+            <span class="module-title">{{ c.title }}</span>
+            <span class="pct-pill {{ 'good' if c.pct >= 70 else 'bad' }}">{{ c.correct }}/{{ c.answered }}</span>
+            {% if c.avg_seconds %}<span class="secs">avg {{ c.avg_seconds }}s</span>{% endif %}
+            <span class="wrong-count{{ " none" if not c.wrong }}">{{ c.wrong | length }} wrong</span>
+          </summary>
+          {% if c.wrong %}
+          <ul class="wrong-list">
+            {% for r in c.wrong %}
+            <li>
+              <p class="wrong-stem">{{ r.stem }}</p>
+              <p class="wrong-meta"><span class="bad-text">You: {{ r.picked | join(" + ") if r.picked else "no answer" }}</span> · <span class="good-text">Right: {{ r.right | join(" + ") }}</span>{% if r.seconds %} · {{ r.seconds }}s{% endif %} · {{ fmt_time(r.when) }}</p>
+              {% if r.trap_why %}<p class="opt-why">Trap: {{ r.trap_why }}</p>{% endif %}
+              <div class="row">
+                <button class="btn small primary" type="button" data-tutor data-course="{{ course_id }}" data-attempt="{{ r.attempt_id }}" data-question="{{ r.question_id }}" data-mode="why-wrong" data-title="{{ c.title }}" data-prompt="Why was my answer wrong, and how do I spot this next time?">Ask the tutor why</button>
+                <a class="btn small" href="/attempt/{{ r.attempt_id }}/results">Open attempt</a>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}<p class="note">No wrong answers in this module.</p>{% endif %}
+          <form method="post" action="/practice/{{ course_id }}"><input type="hidden" name="concept" value="{{ c.id }}"><button class="btn small" type="submit">Drill {{ c.title }}</button></form>
+        </details>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </section>
+
+    <section role="tabpanel" id="panel-answers" aria-labelledby="tab-answers" class="tabpanel insight-panel">
+      <div class="log-filters" role="group" aria-label="Filter answers">
+        <label>Result <select id="f-result"><option value="">All</option><option value="wrong">Wrong</option><option value="right">Right</option></select></label>
+        <label>Domain <select id="f-domain"><option value="">All</option>{% for d in cert.domains %}<option value="{{ d.id }}">{{ d.name | replace("Design ", "") }}</option>{% endfor %}</select></label>
+        <label>Module <select id="f-concept"><option value="">All</option>{% for c in log | map(attribute="concept_title") | unique | sort %}<option>{{ c }}</option>{% endfor %}</select></label>
+        <label class="check"><input type="checkbox" id="f-slow"> Slow (over 2.5 min)</label>
+        <label>Sort <select id="f-sort"><option value="when">Newest first</option><option value="slow">Slowest first</option></select></label>
+        <span class="note" id="f-count"></span>
+      </div>
+      <div class="tbl-wrap"><table class="log-table">
+        <thead><tr><th>When</th><th>Question</th><th>Module</th><th>Result</th><th>Time</th><th></th></tr></thead>
+        <tbody>
+        {% for r in log %}
+          <tr data-result="{{ 'right' if r.correct else 'wrong' }}" data-domain="{{ r.domain }}" data-concept="{{ r.concept_title }}" data-seconds="{{ r.seconds or 0 }}" data-when="{{ r.when }}">
+            <td class="nowrap">{{ fmt_time(r.when) }}</td>
+            <td class="log-q">
+              <details><summary>{{ r.stem[:110] }}{% if r.stem | length > 110 %}…{% endif %}</summary>
+                <p>{{ r.stem }}</p>
+                <p class="wrong-meta"><span class="{{ 'good-text' if r.correct else 'bad-text' }}">You: {{ r.picked | join(" + ") if r.picked else "no answer" }}</span>{% if not r.correct %} · <span class="good-text">Right: {{ r.right | join(" + ") }}</span>{% endif %}</p>
+                {% if r.trap_why %}<p class="opt-why">Trap: {{ r.trap_why }}</p>{% endif %}
+                <p class="note">Pattern: {{ r.rule }}</p>
+              </details>
+            </td>
+            <td><a href="/course/{{ course_id }}/{{ r.concept }}">{{ r.concept_title }}</a><small class="dom-name dom-{{ r.domain }}">{{ r.domain_name | replace("Design ", "") }}</small></td>
+            <td><span class="pct-pill {{ 'good' if r.correct else 'bad' }}">{{ "Right" if r.correct else "Wrong" }}</span>{% if r.flagged %} <span class="pct-pill flag">⚑</span>{% endif %}{% if r.source == "ai" %} <span class="pct-pill ai">AI</span>{% endif %}</td>
+            <td class="num {{ 'slow' if r.seconds and r.seconds > 150 }}">{{ r.seconds ~ "s" if r.seconds else "–" }}</td>
+            <td>{% if not r.correct %}<button class="btn small" type="button" data-tutor data-course="{{ course_id }}" data-attempt="{{ r.attempt_id }}" data-question="{{ r.question_id }}" data-mode="why-wrong" data-title="{{ r.concept_title }}" data-prompt="Why was my answer wrong, and how do I spot this next time?">Why?</button>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </section>
+
+    <section role="tabpanel" id="panel-time" aria-labelledby="tab-time" class="tabpanel insight-panel">
+      <div class="stat-strip">
+        <div><b>{{ (timing.total_seconds // 3600) | int }}h {{ ((timing.total_seconds % 3600) // 60) | int }}m</b><span>answering questions</span></div>
+        <div><b>{{ timing.avg or "–" }}s</b><span>average per question (real exam: ~120s)</span></div>
+        <div><b>{{ timing.avg_right or "–" }}s / {{ timing.avg_wrong or "–" }}s</b><span>average when right / wrong</span></div>
+        <div><b>{{ timing.over_limit }}</b><span>answers over 2.5 min</span></div>
+      </div>
+      <div class="results-grid">
+        <section class="panel">
+          <h2>Time by domain</h2>
+          {% set slowest_domain = modules | map(attribute="avg_seconds") | select | max if modules | map(attribute="avg_seconds") | select | list else 1 %}
+          {% for d in modules if d.avg_seconds %}
+          <div class="drow dom-{{ d.id }}">
+            <span class="dname">{{ d.name }}</span>
+            <span class="pct-pill {{ 'bad' if d.avg_seconds > 120 else 'good' }}">{{ d.avg_seconds }}s</span>
+            <div class="bar"><i style="--w: {{ (100 * d.avg_seconds / slowest_domain) | round(1) }}%"></i></div>
+            <span class="dmeta">{{ d.answered }} answers</span>
+          </div>
+          {% endfor %}
+        </section>
+        <section class="panel">
+          <h2>Slowest questions</h2>
+          <ul class="slow-list">
+            {% for r in timing.slowest %}
+            <li><span class="pct-pill {{ 'good' if r.correct else 'bad' }}">{{ r.seconds }}s</span><span class="slow-q">{{ r.stem[:90] }}…</span><a href="/course/{{ course_id }}/{{ r.concept }}">{{ r.concept_title }}</a></li>
+            {% else %}<li class="note">No timed answers yet.</li>{% endfor %}
+          </ul>
+        </section>
+      </div>
+    </section>
+  </div>
   {% endif %}
 </main>
+{% include "_tutor.html" %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ asset('js/lesson.js') }}"></script>
+<script src="{{ asset('js/tutor.js') }}"></script>
+<script>
+  // Every-answer table: filter by result, domain, module and slowness; sort by date or time
+  (function () {
+    const tbody = document.querySelector(".log-table tbody");
+    if (!tbody) return;
+    const rows = [...tbody.rows];
+    const $ = id => document.getElementById(id);
+    function apply() {
+      const result = $("f-result").value, domain = $("f-domain").value, concept = $("f-concept").value, slow = $("f-slow").checked;
+      const key = $("f-sort").value === "slow" ? r => -r.dataset.seconds : r => -r.dataset.when;
+      let shown = 0;
+      rows.sort((a, b) => key(a) - key(b)).forEach(r => {
+        const ok = (!result || r.dataset.result === result) && (!domain || r.dataset.domain === domain)
+          && (!concept || r.dataset.concept === concept) && (!slow || +r.dataset.seconds > 150);
+        r.hidden = !ok; shown += ok;
+        tbody.appendChild(r);
+      });
+      $("f-count").textContent = `${shown} of ${rows.length} answers`;
+    }
+    ["f-result", "f-domain", "f-concept", "f-slow", "f-sort"].forEach(id => $(id).addEventListener("change", apply));
+    apply();
+  })();
+</script>
 {% endblock %}

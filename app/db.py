@@ -159,6 +159,13 @@ def recent_attempts(course, limit=10) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def attempt_questions(course) -> dict[str, dict[str, dict]]:
+    """attempt id -> {question id -> the question exactly as it was shown in that attempt}."""
+    with connect() as conn:
+        rows = conn.execute("SELECT id, questions FROM attempts WHERE course = ? AND finished_at IS NOT NULL", (course,)).fetchall()
+    return {r["id"]: {q["id"]: q for q in json.loads(r["questions"])} for r in rows}
+
+
 def missed_patterns(course) -> set[str]:
     """Patterns you've answered wrong at least once; correct answers on these earn bonus XP."""
     with connect() as conn:

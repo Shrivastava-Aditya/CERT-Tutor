@@ -88,3 +88,20 @@ def test_choose_two_needs_both_right():
     assert questions.grade(q, ["o0", "o1"]) == (True, [])
     assert questions.grade(q, ["o0", "o2"]) == (False, ["t"])
     assert questions.grade(q, ["o0"])[0] is False
+
+
+def test_insights_log_modules_and_time():
+    attempt_id = start(mode="sprint")
+    attempt = db.get_attempt(attempt_id)
+    first = attempt["questions"][0]
+    wrong = {first["id"]: [next(o["id"] for o in first["options"] if not o["correct"])][: first["choose"]]}
+    answers = {**right_answers(attempt), **wrong}
+    seconds = {q["id"]: 30 + 20 * i for i, q in enumerate(attempt["questions"])}
+    client.post(f"/attempt/{attempt_id}/submit", json={"answers": answers, "seconds": seconds})
+
+    page = client.get(f"/insights/{COURSE}").text
+    for tab in ("By module", "Every answer", "Time"):
+        assert tab in page
+    assert first["stem"][:60] in page                     # the wrong question is listed under its module
+    assert page.count('data-result="wrong"') == 1 and page.count('data-result="right"') == 9
+    assert "210s" in page                                   # the slowest answer (30 + 20*9) shows its time

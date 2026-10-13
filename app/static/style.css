@@ -552,3 +552,43 @@ mark.clue-hit { background: var(--learning-soft); color: inherit; border-radius:
 .tutor-form { display: flex; gap: 8px; padding: 12px 18px 16px; border-top: 1px solid var(--line); }
 .tutor-form textarea { flex: 1; resize: none; font: 15px/1.4 var(--body); color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
 .tutor-form textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Insights tabs: modules, every answer, time */
+.insight-tabs { display: grid; gap: 16px; }
+.insight-panel { display: grid; gap: 18px; }
+.insight-panel[hidden] { display: none; }
+.tab-count { font: 500 11px var(--mono); color: var(--muted); margin-left: 4px; }
+.module-domain { display: grid; gap: 6px; }
+.module-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.module-head h2 { font-size: 20px; margin-right: auto; }
+.module-head h2::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--dom); margin-right: 10px; vertical-align: middle; }
+.module { border-top: 1px solid var(--line); padding: 10px 0; }
+.module summary { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; cursor: pointer; list-style: none; }
+.module summary::-webkit-details-marker { display: none; }
+.module summary::before { content: "▸"; color: var(--muted); transition: transform .2s; }
+.module[open] summary::before { transform: rotate(90deg); }
+.module-title { font-weight: 700; margin-right: auto; }
+.wrong-count { font: 500 12px var(--mono); color: var(--trap); }
+.module form { margin-top: 10px; }
+.wrong-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; }
+.wrong-list li { background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--trap); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; }
+.wrong-stem { margin: 0; }
+.wrong-meta { margin: 0; font-size: 14px; }
+.bad-text { color: var(--trap); }
+.good-text { color: var(--mastered); }
+.secs.slow, td.slow { color: var(--learning); font-weight: 700; }
+.log-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 14px; color: var(--muted); }
+.log-filters select { font: 14px var(--body); color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; margin-left: 4px; }
+.log-filters .check { display: inline-flex; gap: 6px; align-items: center; }
+.log-table td { vertical-align: top; }
+.log-table tr[hidden] { display: none; }
+.log-q { min-width: 320px; max-width: 520px; }
+.log-q summary { cursor: pointer; }
+.log-q details p { margin: 8px 0 0; }
+.nowrap { white-space: nowrap; }
+.dom-name { display: block; font: 500 11px var(--mono); color: var(--dom); }
+.slow-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.slow-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: baseline; }
+.slow-list a { grid-column: 2; font-size: 13px; }
+.slow-q { font-size: 14px; }
+.wrong-count.none { color: var(--new); }
