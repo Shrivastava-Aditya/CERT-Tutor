@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="wrap">
+  <header>
+    <p class="eyebrow">Tracks</p>
+    <h1 class="h1-sm">Where you're headed</h1>
+    <p class="lede">Each line is a provider and each stop is a certification. The pulsing stop is the one you're studying now.</p>
+  </header>
+  <section class="panel">{% include "_tracks_map.html" %}</section>
+</main>
+{% endblock %}

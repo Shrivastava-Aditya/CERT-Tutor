@@ -4,36 +4,87 @@
   <header class="hero">
     <p class="eyebrow">Loop 1 · skeleton</p>
     <h1>Cert Tutor</h1>
-    <p class="lede">Learn the concept, spot the pattern, dodge the trap. A tutor for AWS, Kubernetes and beyond, running on your homelab.</p>
+    <p class="lede">Learn the concept, spot the pattern, dodge the trap. A tutor for AWS, Azure, Kubernetes and beyond, running on your homelab.</p>
   </header>
 
-  <!-- A preview of how pattern feedback will feel: clue words light up, then the rule flips in. -->
-  <section class="pattern-demo" aria-label="Pattern preview">
-    <p class="stem">
-      A company moves its file server to AWS. Staff connect from
-      <mark class="clue" style="--i:0">Windows</mark> desktops over
-      <mark class="clue" style="--i:1">SMB</mark>, access is controlled by
-      <mark class="clue" style="--i:2">Active Directory</mark> groups, and it must be
-      <mark class="clue" style="--i:3">Multi-AZ</mark>.
-    </p>
-    <div class="rule">
-      <span class="rule-label">Pattern</span>
-      <span>Windows + SMB + AD → <strong>FSx for Windows File Server</strong></span>
-      <span class="trap">Trap: EFS (NFS, Linux only)</span>
+  <section class="panel">
+    <div class="panel-head"><h2>Your tracks</h2><a href="/tracks">Open map →</a></div>
+    {% include "_tracks_map.html" %}
+  </section>
+
+  <section class="lesson-preview">
+    <h2>How a lesson looks</h2>
+
+    <!-- Architecture diagram built from the official AWS icons, with traffic flowing along the lines -->
+    <figure class="panel arch">
+      <div class="map-scroll">
+      <svg class="arch-diagram" viewBox="0 0 760 330" role="img" aria-labelledby="arch-title">
+        <title id="arch-title">Windows desktops connect over SMB to Amazon FSx for Windows File Server in Availability Zone A, which is joined to Active Directory and replicates to a standby in Availability Zone B.</title>
+
+        <rect class="grp region" x="220" y="16" width="524" height="298" rx="6"/>
+        <image href="{{ icon_url('aws:region') }}" x="220" y="16" width="28" height="28"/>
+        <text class="grp-label" x="256" y="35">Region · us-east-1</text>
+
+        <rect class="grp az" x="250" y="64" width="220" height="226" rx="6"/>
+        <text class="grp-label az-label" x="264" y="86">Availability Zone A</text>
+        <rect class="grp az" x="496" y="64" width="220" height="226" rx="6"/>
+        <text class="grp-label az-label" x="510" y="86">Availability Zone B</text>
+
+        <path id="w-smb" class="wire" d="M96 96 C 190 96, 220 166, 328 166"/>
+        <path id="w-ad" class="wire" d="M96 246 C 190 246, 220 186, 328 186"/>
+        <path id="w-sync" class="wire" d="M392 176 H 574"/>
+        <circle class="packet" r="4" style="offset-path: path('M96 96 C 190 96, 220 166, 328 166')"/>
+        <circle class="packet slow" r="4" style="offset-path: path('M392 176 H 574')"/>
+
+        <text class="wire-label" x="168" y="112">SMB</text>
+        <text class="wire-label" x="150" y="236">domain join</text>
+        <text class="wire-label" x="483" y="164" text-anchor="middle">sync replication</text>
+
+        <image href="{{ icon_url('aws:users') }}" x="40" y="68" width="56" height="56"/>
+        <text class="node-label" x="68" y="142" text-anchor="middle">Windows desktops</text>
+        <image href="{{ icon_url('aws:directory-service') }}" x="40" y="218" width="56" height="56"/>
+        <text class="node-label" x="68" y="292" text-anchor="middle">Active Directory</text>
+
+        <image class="node" href="{{ icon_url('aws:fsx-windows') }}" x="328" y="144" width="64" height="64"/>
+        <text class="node-label" x="360" y="230" text-anchor="middle">FSx for Windows</text>
+        <text class="node-sub" x="360" y="246" text-anchor="middle">primary</text>
+        <image class="node standby" href="{{ icon_url('aws:fsx-windows') }}" x="574" y="144" width="64" height="64"/>
+        <text class="node-label" x="606" y="230" text-anchor="middle">FSx for Windows</text>
+        <text class="node-sub" x="606" y="246" text-anchor="middle">standby</text>
+      </svg>
+      </div>
+      <figcaption>Multi-AZ FSx for Windows File Server. Every lesson gets a diagram like this, drawn with the provider's own icons.</figcaption>
+    </figure>
+
+    <!-- Pattern feedback: clue words light up, then the rule flips in -->
+    <div class="panel pattern-demo" aria-label="Pattern preview">
+      <p class="stem">
+        A company moves its file server to AWS. Staff connect from
+        <mark class="clue" style="--i:0">Windows</mark> desktops over
+        <mark class="clue" style="--i:1">SMB</mark>, access is controlled by
+        <mark class="clue" style="--i:2">Active Directory</mark> groups, and it must be
+        <mark class="clue" style="--i:3">Multi-AZ</mark>.
+      </p>
+      <div class="rule">
+        <span class="rule-label">Pattern</span>
+        <span>Windows + SMB + AD → <strong>FSx for Windows File Server</strong></span>
+        <span class="trap">Trap: EFS (NFS, Linux only)</span>
+      </div>
     </div>
   </section>
 
-  <!-- Build order from the plan: each card says which loop adds it. -->
+  <!-- Build order from the plan: each card says which loop adds it -->
   <section class="modes" aria-label="What's coming">
-    <article class="mode"><span class="loop">Loop 3</span><h2>Learn</h2><p>Concept cards: under the hood, where to see it, other clouds.</p></article>
-    <article class="mode"><span class="loop">Loop 4</span><h2>Drill</h2><p>Pattern questions that show which clue you missed.</p></article>
-    <article class="mode"><span class="loop">Loop 5</span><h2>Review</h2><p>Spaced repetition brings back what you're forgetting.</p></article>
-    <article class="mode"><span class="loop">Loop 6</span><h2>Tutor</h2><p>Ask anything about the concept you're on.</p></article>
-    <article class="mode"><span class="loop">Loop 9</span><h2>Boss fight</h2><p>Timed mock exam with a domain health bar.</p></article>
+    <article class="mode"><span class="loop">Loop 3</span><h3>Learn</h3><p>Concept cards: under the hood, where to see it, other clouds.</p></article>
+    <article class="mode"><span class="loop">Loop 4</span><h3>Drill</h3><p>Pattern questions that show which clue you missed.</p></article>
+    <article class="mode"><span class="loop">Loop 5</span><h3>Review</h3><p>Spaced repetition brings back what you're forgetting.</p></article>
+    <article class="mode"><span class="loop">Loop 6</span><h3>Tutor</h3><p>Ask anything about the concept you're on.</p></article>
+    <article class="mode"><span class="loop">Loop 9</span><h3>Boss fight</h3><p>Timed mock exam with a domain health bar.</p></article>
   </section>
 
   <footer class="status">
     <span class="dot" aria-hidden="true"></span> App is running · <a href="/health">/health</a>
+    <span class="credit">Service icons and logos belong to AWS, Microsoft and the CNCF, used for architecture diagrams and training.</span>
   </footer>
 </main>
 {% endblock %}

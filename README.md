@@ -5,8 +5,11 @@ A self-hosted tutor for certification exams (AWS SAA-C03 first, then more AWS, C
 ## Run
 
 ```
+./tools/fetch_icons.sh        # once: downloads the official AWS, Azure and Kubernetes icons
 docker compose up -d --build
 ```
+
+The provider icons are not stored in git. AWS, Microsoft and the CNCF allow them in architecture diagrams and training material, so the script downloads them into `app/static/vendor/` on each machine.
 
 Then open http://<homelab-ip>:8090. Health check: `curl localhost:8090/health`.
 

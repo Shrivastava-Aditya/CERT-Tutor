@@ -1,0 +1,41 @@
+{# Transit-style map: one line per provider, one station per certification. #}
+<div class="map-scroll">
+<svg class="tracks-map" viewBox="0 0 {{ map.width }} {{ map.height }}" role="img" aria-labelledby="map-title">
+  <title id="map-title">Certification tracks for {{ map.tracks | map(attribute='name') | join(', ') }}</title>
+
+  {% for col in map.columns %}
+  <text class="col-title" x="{{ col.x }}" y="22" text-anchor="middle">{{ col.title }}</text>
+  {% endfor %}
+
+  {% for t in map.tracks %}
+  {% set ti = loop.index0 %}
+  <g class="track" style="--track: {{ t.color }}; --t: {{ ti }}">
+    <image href="{{ icon_url(t.logo) }}" x="24" y="{{ t.main_y - 22 }}" width="44" height="44" class="track-logo"/>
+    <text class="track-name" x="80" y="{{ t.main_y + 5 }}">{{ t.name }}</text>
+
+    {% for s in t.segments %}
+    <path class="seg" d="{{ s.d }}" pathLength="1" style="--s: {{ loop.index0 }}"/>
+    {% if s.active %}
+    {# A "train" that keeps running into the station you're working on #}
+    <circle class="train" r="5" style="offset-path: path('{{ s.d }}')"/>
+    {% endif %}
+    {% endfor %}
+
+    {% for c in t.certs %}
+    <g class="station is-{{ c.status }}" style="--c: {{ loop.index0 }}">
+      <title>{{ c.code }} · {{ c.name }} ({{ c.status }})</title>
+      {% if c.status == 'active' %}<circle class="pulse" cx="{{ c.x }}" cy="{{ c.y }}" r="12"/>{% endif %}
+      <circle class="dot" cx="{{ c.x }}" cy="{{ c.y }}" r="11"/>
+      <text class="code" x="{{ c.x }}" y="{{ c.y + 30 }}" text-anchor="middle">{{ c.code }}</text>
+      <text class="name" x="{{ c.x }}" y="{{ c.y + 46 }}" text-anchor="middle">{{ c.name }}</text>
+    </g>
+    {% endfor %}
+  </g>
+  {% endfor %}
+</svg>
+</div>
+<ul class="map-legend">
+  <li><span class="key is-active"></span>Studying now</li>
+  <li><span class="key is-done"></span>Passed</li>
+  <li><span class="key is-planned"></span>Planned</li>
+</ul>

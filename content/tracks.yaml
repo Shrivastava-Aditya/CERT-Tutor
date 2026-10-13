@@ -1,0 +1,39 @@
+# Certification tracks shown on the tracks map.
+# col:    0 = start, 1 = core, 2 = advanced (left to right on the map)
+# lane:   0 = main line, 1 = branch drawn below it
+# after:  the cert this one follows (draws the line between them)
+# status: planned | active | done
+# content: folder in content/ once the course exists
+
+columns: [Start, Core, Advanced]
+
+tracks:
+  - id: aws
+    name: AWS
+    logo: aws:logo
+    color: "#ff9900"
+    certs:
+      - { id: clf-c02, code: CLF-C02, name: Cloud Practitioner, col: 0, status: planned }
+      - { id: saa-c03, code: SAA-C03, name: Solutions Architect – Associate, col: 1, after: clf-c02, status: active, content: aws-saa-c03 }
+      - { id: sap-c02, code: SAP-C02, name: Solutions Architect – Professional, col: 2, after: saa-c03, status: planned }
+      - { id: dva-c02, code: DVA-C02, name: Developer – Associate, col: 1, lane: 1, after: clf-c02, status: planned }
+
+  - id: azure
+    name: Azure
+    logo: azure:logo
+    color: "#50e6ff"
+    certs:
+      - { id: az-900, code: AZ-900, name: Azure Fundamentals, col: 0, status: planned }
+      - { id: az-104, code: AZ-104, name: Azure Administrator, col: 1, after: az-900, status: planned }
+      - { id: az-305, code: AZ-305, name: Solutions Architect Expert, col: 2, after: az-104, status: planned }
+      - { id: az-500, code: AZ-500, name: Security Engineer, col: 2, lane: 1, after: az-104, status: planned }
+
+  - id: kubernetes
+    name: Kubernetes
+    logo: k8s:logo
+    color: "#7b9cff"
+    certs:
+      - { id: kcna, code: KCNA, name: Cloud Native Associate, col: 0, status: planned }
+      - { id: cka, code: CKA, name: Kubernetes Administrator, col: 1, after: kcna, status: planned }
+      - { id: cks, code: CKS, name: Kubernetes Security Specialist, col: 2, after: cka, status: planned }
+      - { id: ckad, code: CKAD, name: Application Developer, col: 1, lane: 1, after: kcna, status: planned }
