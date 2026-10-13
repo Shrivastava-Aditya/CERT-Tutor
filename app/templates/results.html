@@ -95,6 +95,12 @@
       </div>
       <div class="rule"><span class="rule-label">Pattern</span><span>{{ q.rule }}</span></div>
       <p class="explain">{{ q.explain }}</p>
+      <div class="row">
+        <button class="btn small{{ ' primary' if not q.ok }}" type="button" data-tutor data-course="{{ course_id }}" data-attempt="{{ attempt.id }}"
+          data-question="{{ q.id }}" data-mode="why-wrong" data-title="Q{{ q.n }} · {{ q.concept_title }}"
+          data-prompt="{{ 'Why was my answer wrong, and how do I spot this next time?' if not q.ok else 'Walk me through why this answer is right.' }}">
+          {{ "Ask the tutor why" if not q.ok else "Explain this one" }}</button>
+      </div>
       {% if q.source == "ai" %}
       <form class="report" method="post" action="/question/{{ q.id }}/report">
         <input type="hidden" name="back" value="/attempt/{{ attempt.id }}/results">
@@ -106,6 +112,7 @@
     {% endfor %}
   </section>
 
+  {% include "_tutor.html" %}
   <div class="row">
     <a class="btn primary" href="/practice/{{ course_id }}">New attempt</a>
     <a class="btn" href="/insights/{{ course_id }}">All insights</a>
@@ -113,6 +120,7 @@
 </main>
 {% endblock %}
 {% block scripts %}
+<script src="{{ asset('js/tutor.js') }}"></script>
 <script>
   // Count the score up from 100, unless the viewer prefers less motion
   (function () {

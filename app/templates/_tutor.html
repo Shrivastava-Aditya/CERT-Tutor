@@ -1,0 +1,22 @@
+{# Tutor chat drawer, opened by any [data-tutor] element (see static/js/tutor.js) #}
+<aside class="tutor" id="tutor" hidden aria-label="Tutor chat">
+  <header class="tutor-head">
+    <div>
+      <p class="eyebrow">AI tutor</p>
+      <h2 class="tutor-title">Tutor</h2>
+    </div>
+    <button class="icon-btn" type="button" data-tutor-close aria-label="Close the tutor">✕</button>
+  </header>
+  <div class="tutor-modes" role="group" aria-label="Tutor mode">
+    <button class="chip" type="button" data-set-mode="explain" aria-pressed="true">Explain</button>
+    <button class="chip" type="button" data-set-mode="quiz" aria-pressed="false">Quiz me</button>
+    <button class="chip" type="button" data-set-mode="compare" aria-pressed="false">Azure / GCP</button>
+    <button class="chip ghost" type="button" data-tutor-clear>New chat</button>
+  </div>
+  <div class="tutor-log" aria-live="polite"></div>
+  <form class="tutor-form">
+    <label class="sr-only" for="tutor-input">Message the tutor</label>
+    <textarea id="tutor-input" rows="2" placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)"></textarea>
+    <button class="btn primary" type="submit">Send</button>
+  </form>
+</aside>

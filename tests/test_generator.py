@@ -88,3 +88,42 @@ def test_schema_only_allows_the_patterns_traps(course):
     schema = generator.output_schema(course, course.patterns["fsx-windows-share"])
     trap_enum = schema["properties"]["questions"]["items"]["properties"]["options"]["items"]["properties"]["trap"]["enum"]
     assert trap_enum == ["", "efs-for-windows", "s3-file-gateway-as-ha-share", "ebs-multi-attach-as-share", "fsx-lustre-for-windows"]
+
+
+class FakeBatchClient:
+    """Stands in for anthropic.Anthropic(): accepts a batch, reports it 'in_progress' once, then 'ended' with results."""
+    def __init__(self, raws_by_pattern):
+        self.raws = raws_by_pattern
+        self.polls = 0
+        outer = self
+
+        class Batches:
+            def create(self, requests):
+                outer.submitted = [r["custom_id"] for r in requests]
+                return SimpleNamespace(id="msgbatch_test")
+
+            def retrieve(self, batch_id):
+                outer.polls += 1
+                return SimpleNamespace(processing_status="ended" if outer.polls > 1 else "in_progress")
+
+            def results(self, batch_id):
+                import json
+                for pid in outer.submitted:
+                    message = SimpleNamespace(stop_reason="end_turn", usage=USAGE,
+                                              content=[SimpleNamespace(type="text", text=json.dumps({"questions": outer.raws[pid]}))])
+                    yield SimpleNamespace(custom_id=pid, result=SimpleNamespace(type="succeeded", message=message))
+
+        self.messages = SimpleNamespace(batches=Batches())
+
+
+def test_batch_job_submits_waits_and_stores(course, monkeypatch):
+    fake = FakeBatchClient({"fsx-windows-share": [GOOD, BAD]})
+    monkeypatch.setattr(generator.anthropic, "Anthropic", lambda: fake)
+    monkeypatch.setattr(generator, "BATCH_POLL_SECONDS", 0)
+    job_id = generator.start(course, COURSE, "after-attempt", ["fsx-windows-share"], batch=True)
+    generator.submit_batch(course, COURSE, job_id)
+
+    job = db.get_job(job_id)
+    assert fake.submitted == ["fsx-windows-share"] and fake.polls == 2
+    assert (job["status"], job["batch_id"], job["is_batch"], job["made"], job["rejected"]) == ("done", "msgbatch_test", 1, 1, 1)
+    assert generator.estimate_cost(1000, 800, "claude-opus-5-5", batch=True) == generator.estimate_cost(1000, 800, "claude-opus-5-5") / 2

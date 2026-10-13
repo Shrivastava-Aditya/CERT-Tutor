@@ -67,9 +67,30 @@ CREATE TABLE IF NOT EXISTS gen_jobs (
     output_tokens INTEGER NOT NULL DEFAULT 0,
     error         TEXT,
     started_at    REAL NOT NULL,
-    finished_at   REAL
+    finished_at   REAL,
+    is_batch      INTEGER NOT NULL DEFAULT 0,
+    batch_id      TEXT
+);
+CREATE TABLE IF NOT EXISTS tutor_usage (
+    id            INTEGER PRIMARY KEY,
+    course        TEXT NOT NULL,
+    concept       TEXT,
+    mode          TEXT NOT NULL,
+    model         TEXT NOT NULL,
+    via_headroom  INTEGER NOT NULL DEFAULT 0,
+    input_tokens  INTEGER NOT NULL,
+    cache_read    INTEGER NOT NULL,
+    cache_write   INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    created_at    REAL NOT NULL
 );
 """
+
+# Columns added after a table first shipped: (table, column, definition). Applied once to older databases.
+MIGRATIONS = [
+    ("gen_jobs", "is_batch", "INTEGER NOT NULL DEFAULT 0"),
+    ("gen_jobs", "batch_id", "TEXT"),
+]
 
 
 def data_dir() -> Path:
@@ -84,6 +105,10 @@ def connect():
     conn.row_factory = sqlite3.Row
     try:
         conn.executescript(SCHEMA)   # CREATE ... IF NOT EXISTS, so this is safe every time
+        for table, column, definition in MIGRATIONS:
+            existing = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+            if column not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
         yield conn
         conn.commit()
     finally:
@@ -185,10 +210,23 @@ def report_question(question_id) -> bool:
         return conn.execute("UPDATE generated_questions SET status = 'reported' WHERE id = ? AND status = 'ready'", (question_id,)).rowcount > 0
 
 
-def start_job(job_id, course, reason, patterns):
+def start_job(job_id, course, reason, patterns, batch=False):
     with connect() as conn:
-        conn.execute("INSERT INTO gen_jobs (id, course, reason, patterns, status, started_at) VALUES (?,?,?,?, 'running', ?)",
-                     (job_id, course, reason, json.dumps(patterns), time.time()))
+        conn.execute("INSERT INTO gen_jobs (id, course, reason, patterns, status, started_at, is_batch) VALUES (?,?,?,?, 'running', ?, ?)",
+                     (job_id, course, reason, json.dumps(patterns), time.time(), int(batch)))
+
+
+def get_job(job_id) -> dict:
+    with connect() as conn:
+        return dict(conn.execute("SELECT * FROM gen_jobs WHERE id = ?", (job_id,)).fetchone())
+
+
+def waiting_batch_jobs() -> list[dict]:
+    """Batch jobs submitted less than a day ago that haven't finished (the Batches API gives up after 24 hours)."""
+    with connect() as conn:
+        rows = conn.execute("SELECT * FROM gen_jobs WHERE status = 'running' AND is_batch = 1 AND batch_id IS NOT NULL AND started_at > ?",
+                            (time.time() - 86400,)).fetchall()
+    return [dict(r) for r in rows]
 
 
 def update_job(job_id, **fields):
@@ -204,10 +242,13 @@ def add_job_tokens(job_id, input_tokens, output_tokens, made, rejected):
 
 
 def running_job(course) -> dict | None:
-    """A job still marked running. Anything older than 15 minutes is treated as dead (the app restarted mid-job)."""
+    """A job still marked running. Instant jobs older than 15 minutes count as dead (the app restarted mid-job);
+    batch jobs get 24 hours, the Batches API's own limit."""
+    now = time.time()
     with connect() as conn:
-        row = conn.execute("SELECT * FROM gen_jobs WHERE course = ? AND status = 'running' AND started_at > ? ORDER BY started_at DESC LIMIT 1",
-                           (course, time.time() - 900)).fetchone()
+        row = conn.execute("SELECT * FROM gen_jobs WHERE course = ? AND status = 'running' AND "
+                           "((is_batch = 0 AND started_at > ?) OR (is_batch = 1 AND started_at > ?)) ORDER BY started_at DESC LIMIT 1",
+                           (course, now - 900, now - 86400)).fetchone()
     return dict(row) if row else None
 
 
@@ -231,6 +272,29 @@ def player_stats() -> dict:
         streak += 1
         day -= timedelta(days=1)
     return {"xp": xp, "level": 1 + xp // 500, "streak": streak, "studied_today": date.today().isoformat() in days}
+
+
+def log_tutor_usage(course, concept, mode, model, via_headroom, usage):
+    with connect() as conn:
+        conn.execute("INSERT INTO tutor_usage (course, concept, mode, model, via_headroom, input_tokens, cache_read, cache_write, output_tokens, created_at) "
+                     "VALUES (?,?,?,?,?,?,?,?,?,?)",
+                     (course, concept, mode, model, int(via_headroom), usage.input_tokens, usage.cache_read_input_tokens or 0,
+                      usage.cache_creation_input_tokens or 0, usage.output_tokens, time.time()))
+
+
+def tutor_replies_today(course) -> int:
+    with connect() as conn:
+        return conn.execute("SELECT COUNT(*) FROM tutor_usage WHERE course = ? AND date(created_at, 'unixepoch', 'localtime') = date('now', 'localtime')",
+                            (course,)).fetchone()[0]
+
+
+def tutor_usage_summary(course) -> list[dict]:
+    """Average tokens per tutor reply, split by whether Headroom was in the path, so the two can be compared."""
+    with connect() as conn:
+        rows = conn.execute("SELECT via_headroom, COUNT(*) AS replies, AVG(input_tokens) AS input, AVG(cache_read) AS cache_read, "
+                            "AVG(cache_write) AS cache_write, AVG(output_tokens) AS output FROM tutor_usage WHERE course = ? GROUP BY via_headroom",
+                            (course,)).fetchall()
+    return [dict(r) for r in rows]
 
 
 def fmt_time(ts: float) -> str:

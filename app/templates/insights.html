@@ -78,6 +78,23 @@
     </table></div>
   </section>
 
+  {% if tutor_usage %}
+  <section class="panel">
+    <h2>Tutor token use</h2>
+    <p class="note">Average tokens per tutor reply. Cached tokens cost about a tenth of normal input. The Headroom row only appears once replies have gone through it.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Route</th><th>Replies</th><th>New input</th><th>Cached input</th><th>Cache writes</th><th>Output</th></tr></thead>
+      <tbody>
+      {% for u in tutor_usage %}
+        <tr><td>{{ "Through Headroom" if u.via_headroom else "Direct to the API" }}</td><td class="num">{{ u.replies }}</td>
+          <td class="num">{{ u.input | round | int }}</td><td class="num">{{ u.cache_read | round | int }}</td>
+          <td class="num">{{ u.cache_write | round | int }}</td><td class="num">{{ u.output | round | int }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  {% endif %}
+
   {% if attempts %}
   <section class="panel">
     <h2>Score history</h2>

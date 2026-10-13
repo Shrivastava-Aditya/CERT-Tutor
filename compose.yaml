@@ -16,6 +16,19 @@ services:
       - ./content:/app/content:ro            # course YAML, read-only inside the container
     restart: unless-stopped
 
+  # Optional Headroom proxy for the tutor's API calls. Off unless you ask for it:
+  #   docker compose --profile headroom up -d     and set HEADROOM_URL=http://headroom:8787 in .env
+  # No ports are published, so only the cert-tutor container can reach it.
+  headroom:
+    image: ghcr.io/headroomlabs-ai/headroom:0.40.0
+    profiles: [headroom]
+    command: ["--host", "0.0.0.0", "--port", "8787"]
+    environment:
+      HEADROOM_ALLOW_UNAUTHENTICATED_BIND: "1"   # fine here: reachable only inside this compose network
+      HEADROOM_BEACON: "off"                     # don't send usage counters to Headroom
+      DO_NOT_TRACK: "1"
+    restart: unless-stopped
+
   # Tests and the content validator. Only starts when asked:
   #   docker compose run --rm test
   #   docker compose run --rm test python tools/validate.py content/aws-saa-c03

@@ -11,10 +11,13 @@ import json
 import os
 import random
 import secrets
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 import anthropic
+from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
+from anthropic.types.messages.batch_create_params import Request
 
 from app import db, insights
 from app.content import Course, question_problems
@@ -38,9 +41,10 @@ def available() -> bool:
     return bool(os.environ.get("ANTHROPIC_API_KEY"))
 
 
-def estimate_cost(input_tokens: int, output_tokens: int, model: str = MODEL) -> float:
+def estimate_cost(input_tokens: int, output_tokens: int, model: str = MODEL, batch: bool = False) -> float:
     price_in, price_out = PRICES.get(model, (4.0, 20.0))
-    return (input_tokens * price_in + output_tokens * price_out) / 1_000_000
+    cost = (input_tokens * price_in + output_tokens * price_out) / 1_000_000
+    return cost / 2 if batch else cost     # the Batches API charges half
 
 
 # ---------------- 1. which patterns to generate for ----------------
@@ -154,18 +158,40 @@ TRAPS (every wrong option must be one of these):
 Write {n} new questions. Each has {"5 options and exactly 2 correct (a 'choose two' question; say 'Which TWO' in the stem)" if choose == 2 else "4 options and exactly 1 correct"}."""
 
 
+def choose_count(course: Course, pattern_id: str) -> int:
+    bank = [q for q in course.questions.values() if q["pattern"] == pattern_id]
+    return 2 if any(q.get("choose", 1) == 2 for q in bank) else 1
+
+
+def request_params(course: Course, pattern: dict, choose: int, n: int, focus_traps: list[str]) -> dict:
+    """One Messages API request. Shared by instant runs and batch runs, so both ask exactly the same thing."""
+    return {
+        "model": MODEL,
+        "max_tokens": 16000,
+        "system": [{"type": "text", "text": system_prompt(course), "cache_control": {"type": "ephemeral"}}],
+        "output_config": {"effort": "medium", "format": {"type": "json_schema", "schema": output_schema(course, pattern)}},
+        "messages": [{"role": "user", "content": pattern_brief(course, pattern, choose, n, focus_traps)}],
+    }
+
+
+def parse_message(message) -> list[dict]:
+    if message.stop_reason == "refusal":
+        raise GenerationError("the model declined this request")
+    if message.stop_reason == "max_tokens":
+        raise GenerationError("the answer was cut off (max_tokens)")
+    text = next((b.text for b in message.content if b.type == "text"), "")
+    try:
+        return json.loads(text)["questions"]
+    except (json.JSONDecodeError, KeyError) as e:
+        raise GenerationError("the answer wasn't the expected JSON") from e
+
+
 def ask_claude(course: Course, pattern: dict, choose: int, n: int, focus_traps: list[str]) -> tuple[list[dict], object]:
+    """Instant run: one request now, at the normal price, with the server-side refusal fallback."""
     client = anthropic.Anthropic()
     extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} if MODEL in FALLBACK_MODELS else {}
     try:
-        response = client.beta.messages.create(
-            model=MODEL,
-            max_tokens=16000,
-            system=[{"type": "text", "text": system_prompt(course), "cache_control": {"type": "ephemeral"}}],
-            output_config={"effort": "medium", "format": {"type": "json_schema", "schema": output_schema(course, pattern)}},
-            messages=[{"role": "user", "content": pattern_brief(course, pattern, choose, n, focus_traps)}],
-            **extra,
-        )
+        message = client.beta.messages.create(**request_params(course, pattern, choose, n, focus_traps), **extra)
     except anthropic.RateLimitError as e:
         raise GenerationError("rate limited by the API; try again in a minute") from e
     except anthropic.AuthenticationError as e:
@@ -174,16 +200,7 @@ def ask_claude(course: Course, pattern: dict, choose: int, n: int, focus_traps: 
         raise GenerationError(f"API error {e.status_code}: {e.message}") from e
     except anthropic.APIConnectionError as e:
         raise GenerationError("couldn't reach the API; check the internet connection") from e
-
-    if response.stop_reason == "refusal":
-        raise GenerationError("the model declined this request")
-    if response.stop_reason == "max_tokens":
-        raise GenerationError("the answer was cut off (max_tokens)")
-    text = next((b.text for b in response.content if b.type == "text"), "")
-    try:
-        return json.loads(text)["questions"], response.usage
-    except (json.JSONDecodeError, KeyError) as e:
-        raise GenerationError("the answer wasn't the expected JSON") from e
+    return parse_message(message), message.usage
 
 
 # ---------------- 3 + 4. validate and store ----------------
@@ -203,11 +220,10 @@ def to_question(raw: dict, pattern: dict, choose: int) -> dict:
     }
 
 
-def generate_for_pattern(course: Course, course_id: str, pattern_id: str, answers: list[dict], job_id: str) -> tuple[int, int]:
+def store(course: Course, course_id: str, pattern_id: str, raws: list[dict], usage, job_id: str) -> tuple[int, int]:
+    """Validate each generated question and save it as ready or rejected; add the tokens to the job."""
     pattern = course.patterns[pattern_id]
-    bank = [q for q in course.questions.values() if q["pattern"] == pattern_id]
-    choose = 2 if any(q.get("choose", 1) == 2 for q in bank) else 1
-    raws, usage = ask_claude(course, pattern, choose, PER_PATTERN, traps_you_fall_for(answers, pattern_id))
+    choose = choose_count(course, pattern_id)
     domains = {d["id"] for d in course.cert["domains"]}
     qualifiers = set(course.cert["qualifiers"])
     made = rejected = 0
@@ -222,7 +238,13 @@ def generate_for_pattern(course: Course, course_id: str, pattern_id: str, answer
     return made, rejected
 
 
-def start(course: Course, course_id: str, reason: str, patterns: list[str] | None = None) -> str | None:
+def generate_for_pattern(course: Course, course_id: str, pattern_id: str, answers: list[dict], job_id: str) -> tuple[int, int]:
+    choose = choose_count(course, pattern_id)
+    raws, usage = ask_claude(course, course.patterns[pattern_id], choose, PER_PATTERN, traps_you_fall_for(answers, pattern_id))
+    return store(course, course_id, pattern_id, raws, usage, job_id)
+
+
+def start(course: Course, course_id: str, reason: str, patterns: list[str] | None = None, batch: bool = False) -> str | None:
     """Create a job and return its id, or None if one is already running or today's limit is reached."""
     if not available() or db.running_job(course_id):
         return None
@@ -233,13 +255,13 @@ def start(course: Course, course_id: str, reason: str, patterns: list[str] | Non
     if not patterns:
         return None
     job_id = secrets.token_hex(6)
-    db.start_job(job_id, course_id, reason, patterns)
+    db.start_job(job_id, course_id, reason, patterns, batch)
     return job_id
 
 
 def run(course: Course, course_id: str, job_id: str):
-    """Do the work for a job (called in the background). A few patterns run in parallel."""
-    job = next(j for j in db.recent_jobs(course_id, 50) if j["id"] == job_id)
+    """Instant job (called in the background). A few patterns run in parallel."""
+    job = db.get_job(job_id)
     patterns = json.loads(job["patterns"])
     answers = db.course_answers(course_id)
     errors = []
@@ -252,6 +274,74 @@ def run(course: Course, course_id: str, job_id: str):
 
     with ThreadPoolExecutor(max_workers=3) as pool:
         list(pool.map(one, patterns))
-    failed_all = len(errors) == len(patterns)
-    db.update_job(job_id, status="failed" if failed_all else "done", error="; ".join(errors) or None,
-                  finished_at=time.time())
+    finish(job_id, errors, len(patterns))
+
+
+def finish(job_id: str, errors: list[str], total: int):
+    db.update_job(job_id, status="failed" if errors and len(errors) == total else "done",
+                  error="; ".join(errors) or None, finished_at=time.time())
+
+
+# ---------------- batch jobs: half price, results usually within minutes (up to 24 h) ----------------
+
+BATCH_POLL_SECONDS = 30
+
+
+def submit_batch(course: Course, course_id: str, job_id: str):
+    """Send every pattern of a job as one Message Batch. The refusal fallback isn't available on batches, so it's left out."""
+    job = db.get_job(job_id)
+    answers = db.course_answers(course_id)
+    requests = [
+        Request(custom_id=pid, params=MessageCreateParamsNonStreaming(
+            **request_params(course, course.patterns[pid], choose_count(course, pid), PER_PATTERN, traps_you_fall_for(answers, pid))))
+        for pid in json.loads(job["patterns"])
+    ]
+    try:
+        batch = anthropic.Anthropic().messages.batches.create(requests=requests)
+    except anthropic.APIError as e:
+        finish(job_id, [f"couldn't submit the batch: {e}"], 1)
+        return
+    db.update_job(job_id, batch_id=batch.id)
+    watch_batch(course, course_id, job_id)
+
+
+def watch_batch(course: Course, course_id: str, job_id: str):
+    """Wait for a batch to end, then validate and store its questions. Safe to call again after an app restart."""
+    client = anthropic.Anthropic()
+    batch_id = db.get_job(job_id)["batch_id"]
+    while True:
+        try:
+            batch = client.messages.batches.retrieve(batch_id)
+        except anthropic.APIConnectionError:
+            time.sleep(BATCH_POLL_SECONDS)
+            continue
+        if batch.processing_status == "ended":
+            break
+        time.sleep(BATCH_POLL_SECONDS)
+
+    errors, total = [], 0
+    for result in client.messages.batches.results(batch_id):
+        total += 1
+        pid = result.custom_id
+        if result.result.type != "succeeded":
+            errors.append(f"{pid}: batch request {result.result.type}")
+            continue
+        try:
+            raws = parse_message(result.result.message)
+            store(course, course_id, pid, raws, result.result.message.usage, job_id)
+        except GenerationError as e:
+            errors.append(f"{pid}: {e}")
+    finish(job_id, errors, max(total, 1))
+
+
+def run_in_thread(target, *args):
+    """Batch jobs wait a long time, so they get their own thread instead of a web worker."""
+    threading.Thread(target=target, args=args, daemon=True).start()
+
+
+def resume_batches(load_course):
+    """On startup: pick up batch jobs that were still waiting when the app stopped."""
+    for job in db.waiting_batch_jobs():
+        course, errors = load_course(job["course"])
+        if not errors:
+            run_in_thread(watch_batch, course, job["course"], job["id"])

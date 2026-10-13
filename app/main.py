@@ -1,18 +1,31 @@
 """Cert Tutor web app."""
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import db, insights, learn, practice
+from app import db, generator, insights, learn, practice, tutor_routes
 from app.tracks import load_tracks
-from app.web import BASE_DIR, CONTENT_DIR, course_or_error_page, provider_logo, render
+from app.web import BASE_DIR, CONTENT_DIR, course_or_error_page, get_course, provider_logo, render
 
-app = FastAPI(title="Cert Tutor")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Batch question jobs can outlive a restart; keep watching the ones still waiting
+    if generator.available():
+        generator.resume_batches(get_course)
+    yield
+
+
+app = FastAPI(title="Cert Tutor", lifespan=lifespan)
 
 # /static/... serves CSS, JS and images straight from app/static/
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 # Test simulator, drills, results and insights live in app/practice.py
 app.include_router(practice.router)
+# AI tutor chat lives in app/tutor_routes.py
+app.include_router(tutor_routes.router)
 
 
 @app.get("/", response_class=HTMLResponse)

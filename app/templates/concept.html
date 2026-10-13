@@ -11,6 +11,11 @@
       <p class="eyebrow"><span class="dom-chip">{{ domain.name }}</span></p>
       <h1 class="h1-sm">{{ concept.title }}</h1>
       <p class="lede">{{ concept.summary }}</p>
+      <div class="row tutor-openers">
+        <button class="btn primary" type="button" data-tutor data-course="{{ course_id }}" data-concept="{{ concept.id }}" data-title="{{ concept.title }}">Ask the tutor</button>
+        <button class="btn" type="button" data-tutor data-course="{{ course_id }}" data-concept="{{ concept.id }}" data-title="{{ concept.title }}" data-mode="quiz" data-prompt="Quiz me on this.">Quiz me</button>
+        <button class="btn" type="button" data-tutor data-course="{{ course_id }}" data-concept="{{ concept.id }}" data-title="{{ concept.title }}" data-mode="compare" data-prompt="How do Azure and Google Cloud do this?">Compare clouds</button>
+      </div>
     </div>
   </header>
 
@@ -97,9 +102,11 @@
     {% if next %}<a class="pager-next" href="/course/{{ course_id }}/{{ next.id }}"><span>Next</span>{{ next.title }}</a>{% endif %}
   </nav>
 </main>
+{% include "_tutor.html" %}
 {% endblock %}
 {% block scripts %}
 <script src="{{ asset('lib/d3-7.9.0.min.js') }}"></script>
 <script src="{{ asset('js/concept-map.js') }}"></script>
 <script src="{{ asset('js/lesson.js') }}"></script>
+<script src="{{ asset('js/tutor.js') }}"></script>
 {% endblock %}

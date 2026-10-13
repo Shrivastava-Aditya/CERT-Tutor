@@ -19,7 +19,10 @@ Then open http://<homelab-ip>:8090. Health check: `curl localhost:8090/health`.
 |---|---|---|
 | `ANTHROPIC_API_KEY` | (none) | Turns on the AI question generator |
 | `QUESTION_MODEL` | `claude-opus-5-5` | Model that writes questions |
-| `GEN_DAILY_LIMIT` | `60` | Most AI questions generated per day (about $0.03 per 2 questions on Opus 5.5) |
+| `GEN_DAILY_LIMIT` | `60` | Most AI questions generated per day (about $0.03 per 2 questions on Opus 5.5; half that for after-attempt batch runs) |
+| `TUTOR_MODEL` | `claude-opus-5-5` | Model the tutor chats with |
+| `TUTOR_DAILY_LIMIT` | `200` | Most tutor replies per day |
+| `HEADROOM_URL` | (none) | Send tutor calls through the Headroom proxy (`docker compose --profile headroom up -d`, then `http://headroom:8787`) |
 
 ## Tests
 

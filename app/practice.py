@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 from app import db, generator, insights, questions
-from app.web import course_or_error_page, provider_logo, render
+from app.web import course_or_error_page, get_course, provider_logo, render
 
 router = APIRouter()
 GRACE_SECONDS = 30   # accept a submission slightly after the timer ends (slow network, tab asleep)
@@ -21,7 +21,7 @@ def practice_home(request: Request, course_id: str):
     analysis = insights.analyse(course, db.course_answers(course_id))
     jobs = db.recent_jobs(course_id)
     for j in jobs:
-        j["cost"] = generator.estimate_cost(j["input_tokens"], j["output_tokens"])
+        j["cost"] = generator.estimate_cost(j["input_tokens"], j["output_tokens"], batch=bool(j["is_batch"]))
     ai = {
         "available": generator.available(),
         "model": generator.MODEL,
@@ -135,17 +135,20 @@ def submit_attempt(attempt_id: str, sub: Submission, background: BackgroundTasks
     # Close the loop: write fresh questions for the patterns you just missed, in the background
     missed = list(dict.fromkeys(r["pattern"] for r in rows if not r["correct"]))[: generator.PATTERNS_PER_JOB]
     if missed:
-        queue_generation(background, attempt["course"], "after-attempt", missed)
+        # Not urgent, so it goes through the Batches API at half price
+        queue_generation(background, attempt["course"], "after-attempt", missed, batch=True)
     return JSONResponse(done)
 
 
-def queue_generation(background: BackgroundTasks, course_id: str, reason: str, patterns: list[str] | None = None) -> str | None:
-    from app.web import get_course
+def queue_generation(background: BackgroundTasks, course_id: str, reason: str, patterns: list[str] | None = None,
+                     batch: bool = False) -> str | None:
     course, errors = get_course(course_id)
     if errors:
         return None
-    job_id = generator.start(course, course_id, reason, patterns)
-    if job_id:
+    job_id = generator.start(course, course_id, reason, patterns, batch=batch)
+    if job_id and batch:
+        generator.run_in_thread(generator.submit_batch, course, course_id, job_id)
+    elif job_id:
         background.add_task(generator.run, course, course_id, job_id)
     return job_id
 
@@ -218,6 +221,7 @@ def insights_page(request: Request, course_id: str):
         "cert": course.cert,
         "analysis": insights.analyse(course, db.course_answers(course_id)),
         "attempts": db.recent_attempts(course_id, 20),
+        "tutor_usage": db.tutor_usage_summary(course_id),
         "fmt_time": db.fmt_time,
         "passing": course.cert["exam"]["passing_score"],
     })
